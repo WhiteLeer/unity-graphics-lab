@@ -1,3 +1,22 @@
 # unity-graphics-lab
 
-In-project Git root for graphics rendering experiments and support assets.
+Unity 图形实验场：用于沉淀可复现的渲染算法验证、效果对比与工程化示例。
+
+## 目录约定
+
+- `Shared/`
+  - 共用脚本、URP 管线资产、截图、模板场景与基础材质
+- `ReflectionEffects/`
+  - `SSR/`
+  - `SSPR/`
+- `Crystal/`
+- `SSS/`
+- 其他效果目录
+  - 按效果名称单独建目录，而不是再按 `Post`、`Surface` 一类技术桶拆分
+
+## 组织原则
+
+- 一个效果一个文件夹。
+- 一个效果至少一个本地示例场景。
+- 参考实现与可调预览实现尽量分离。
+- 公共基础设施统一放在 `Shared/`，避免在各效果目录重复堆副本。

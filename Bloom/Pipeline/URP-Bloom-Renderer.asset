@@ -1,0 +1,350 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7397082815644929022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9b4e98209bb1d442962ac5343b9d9e2, type: 3}
+  m_Name: BloomRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    intensity: 0.55
+    threshold: 1.08
+    softKnee: 0.45
+    clampValue: 4
+    iterations: 4
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    renderPassEvent: 1000
+--- !u!114 &-5406778040509818211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a64b38150550dc489dc573c375bbd25, type: 3}
+  m_Name: SSPRRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    planeNormal: {x: 0, y: 1, z: 0}
+    planeDistance: 0
+    intensity: 0.53
+    fresnelPower: 3.22
+    normalThreshold: 0.199
+    maxPlaneDistance: 0
+    enableReflectorBounds: 1
+    reflectorCenter: {x: 0, y: 0, z: 0}
+    reflectorSize: {x: 10, y: 10}
+    occlusionThickness: 0
+    depthConsistency: 0.001
+    enableHoleFill: 0
+    holeFillRadius: 1
+    roughness: 0
+    maxBlurPixels: 0
+    fadeStart: 0
+    fadeEnd: 0
+    enableDebugVisualization: 0
+    debugBypassNormalFilter: 0
+    debugBypassDepthConsistency: 0
+    debugBypassComputeOcclusion: 0
+    debugStep1: 19
+    debugStep2: 22
+    debugStep3: 21
+    debugStep4: 16
+    renderPassEvent: 450
+    ssprCompute: {fileID: 7200000, guid: 7984928e0d78c954982a69518fd7770e, type: 3}
+--- !u!114 &-2195921265812155756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7f81033df960034baaf7b2d25500100, type: 3}
+  m_Name: SSAOFixed
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    intensity: 1.9
+    radius: 1.31
+    sampleCount: 19
+    enableBlur: 1
+    debugMode: 4
+    renderPassEvent: 450
+  m_Material: {fileID: 0}
+--- !u!114 &-789507138423433019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a119f950cf9e69d4d8dea2eb73e7997c, type: 3}
+  m_Name: SSAORenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    intensity: 1.9
+    radius: 0.543
+    sampleCount: 10
+    beta: 0.002
+    enableBlur: 1
+    enableDebugVisualization: 0
+    debugStep1: 16
+    debugStep2: 5
+    debugStep3: 1
+    debugStep4: 7
+    runtimeDebugStep: 7
+    renderPassEvent: 240
+--- !u!114 &-640686616906439502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00aeba5acffffb741bcf746dbfdf73e8, type: 3}
+  m_Name: DoFRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    focalDistance: 0.1
+    focalRange: 4.1
+    maxBlurRadius: 4
+    intensity: 1
+    nearBlurStrength: 1
+    farBlurStrength: 1
+    renderPassEvent: 500
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de640fe3d0db1804a85f9fc8f5cadab6, type: 3}
+  m_Name: URP-Bloom-Renderer
+  m_EditorClassIdentifier: 
+  debugShaders:
+    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7,
+      type: 3}
+  m_RendererFeatures:
+  - {fileID: 8216759374003212733}
+  - {fileID: 725786909957352387}
+  - {fileID: -5406778040509818211}
+  - {fileID: 8746653824339448573}
+  - {fileID: -7397082815644929022}
+  - {fileID: -640686616906439502}
+  - {fileID: 8648331432059004177}
+  - {fileID: 7425471548419983411}
+  - {fileID: 1639288414784876600}
+  m_RendererFeatureMap: bd9152cc1dcb0772c3eba2665983120a9d9a07bc0444f7b4fd9210bd4f5b6279027456df5e485899b2e4f19aead21bf711e5b8db9d0b057833c8570d08930c673870aabf20ecbf16
+  m_UseNativeRenderPass: 0
+  postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
+  xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
+  shaders:
+    blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
+    copyDepthPS: {fileID: 4800000, guid: d6dae50ee9e1bfa4db75f19f99355220, type: 3}
+    screenSpaceShadowPS: {fileID: 0}
+    samplingPS: {fileID: 4800000, guid: 04c410c9937594faa893a11dceb85f7e, type: 3}
+    stencilDeferredPS: {fileID: 4800000, guid: e9155b26e1bc55942a41e518703fe304, type: 3}
+    fallbackErrorPS: {fileID: 4800000, guid: e6e9a19c3678ded42a3bc431ebef7dbd, type: 3}
+    materialErrorPS: {fileID: 4800000, guid: 5fd9a8feb75a4b5894c241777f519d4e, type: 3}
+    coreBlitPS: {fileID: 4800000, guid: 93446b5c5339d4f00b85c159e1159b7c, type: 3}
+    coreBlitColorAndDepthPS: {fileID: 4800000, guid: d104b2fc1ca6445babb8e90b0758136b,
+      type: 3}
+    cameraMotionVector: {fileID: 4800000, guid: c56b7e0d4c7cb484e959caeeedae9bbf,
+      type: 3}
+    objectMotionVector: {fileID: 4800000, guid: 7b3ede40266cd49a395def176e1bc486,
+      type: 3}
+  m_AssetVersion: 1
+  m_OpaqueLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_TransparentLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_DefaultStencilState:
+    overrideStencilState: 0
+    stencilReference: 0
+    stencilCompareFunction: 8
+    passOperation: 2
+    failOperation: 0
+    zFailOperation: 0
+  m_ShadowTransparentReceive: 1
+  m_RenderingMode: 0
+  m_DepthPrimingMode: 1
+  m_AccurateGbufferNormals: 0
+  m_ClusteredRendering: 0
+  m_TileSize: 32
+  m_IntermediateTextureMode: 0
+--- !u!114 &725786909957352387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a119f950cf9e69d4d8dea2eb73e7997c, type: 3}
+  m_Name: SSAORenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    intensity: 0.85
+    radius: 0.04
+    sampleCount: 12
+    beta: 0.0035
+    enableBlur: 1
+    enableDebugVisualization: 0
+    debugStep1: 16
+    debugStep2: 5
+    debugStep3: 1
+    debugStep4: 7
+    runtimeDebugStep: 7
+    renderPassEvent: 300
+--- !u!114 &1639288414784876600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6abaf3a7825bbd4085d737dc8331000, type: 3}
+  m_Name: ColorGradingRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    toneMapping: 2
+    exposure: 1.03
+    postExposureEV: 0
+    contrast: 1.12
+    saturation: 1.1
+    hueShift: 0
+    temperature: -2
+    tint: 1
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    renderPassEvent: 500
+--- !u!114 &7425471548419983411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b584adbce3cab3641842da9e47214bb2, type: 3}
+  m_Name: MotionBlurRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    intensity: 2
+    shutterAngle: 90
+    sampleCount: 8
+    maxBlurPixels: 24
+    motionThreshold: 0.002
+    centerWeight: 0.2
+    renderPassEvent: 500
+--- !u!114 &8216759374003212733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c624ff2e8fcd21d4baeec5332a5f5f98, type: 3}
+  m_Name: GrayscaleRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    renderPassEvent: 500
+    material: {fileID: 2100000, guid: 0e70563524901ae4cb5380a2d88f2bf6, type: 2}
+    intensity: 1
+--- !u!114 &8648331432059004177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02774fd17de213d4a8c7dd0a187e9007, type: 3}
+  m_Name: SSGIRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    intensity: 0.56
+    rayLength: 5.1
+    thickness: 0.16
+    rayBias: 0.2
+    sampleCount: 12
+    stepCount: 30
+    distanceFalloff: 0.71
+    enableDenoise: 1
+    denoiseRadius: 3
+    denoiseDepthSigma: 3
+    denoiseNormalPower: 3
+    enableTemporal: 1
+    temporalResponse: 0.9
+    temporalClampScale: 1
+    indirectClamp: 1.5
+    temporalDepthReject: 0.01
+    temporalNormalReject: 0.85
+    temporalMotionReject: 0.02
+    resolutionDivider: 2
+    renderPassEvent: 500
+--- !u!114 &8746653824339448573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9340912d29a94b4a99cc9447d305a0e, type: 3}
+  m_Name: SSRRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    intensity: 1.9
+    maxSteps: 128
+    stride: 0.012
+    thickness: 0.04
+    maxDistance: 12
+    rayStartBias: 0.03
+    fresnelPower: 1.2
+    fadeStart: 0
+    fadeEnd: 0.12
+    hitSoftness: 0.232
+    enableDebugVisualization: 0
+    debugStep1: 16
+    debugStep2: 10
+    debugStep3: 17
+    debugStep4: 18
+    runtimeDebugStep: 0
+    renderPassEvent: 300
