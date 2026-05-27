@@ -6,7 +6,7 @@
 
 ## Scope
 - `SurfaceLab` now holds the graphics-side shared effect assets.
-- SR-specific NPR assets now belong under `Assets/SRExtractionValidation/NPR`.
+- SR-specific NPR assets now belong under `Assets/unity-sr-extraction-validation/NPR`.
 
 ## Notes
 - `SurfaceLab` is the graphics-side effect domain formerly carried by `MaterialFX`.
