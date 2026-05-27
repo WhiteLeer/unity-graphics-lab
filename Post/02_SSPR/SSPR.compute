@@ -1,0 +1,137 @@
+// Screen-Space Planar Reflections (minimal PPR-style projection map)
+#pragma kernel CSClear
+#pragma kernel CSProject
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+
+Texture2D<float> _CameraDepthTexture;
+
+RWTexture2D<uint> _SSPRDepth;
+RWTexture2D<uint> _SSPROffset;
+
+cbuffer Params
+{
+    float4 _SSPRScreenSize; // x: width, y: height, z: 1/width, w: 1/height
+    float4x4 _SSPRInvViewProj;
+    float4x4 _SSPRViewProj;
+    float4x4 _SSPRView;
+    float4 _ReflectionPlane; // xyz normal, w distance
+    float _SSPRMaxPlaneDistance;
+    float4 _SSPRCameraPos;
+    float4 _SSPRReflectorCenter;
+    float4 _SSPRReflectorU;
+    float4 _SSPRReflectorV;
+    float4 _SSPRReflectorHalfSize;
+    float _SSPRUseReflectorBounds;
+    float _SSPROcclusionThickness;
+    float4 _SSPRDebugFlags;
+};
+
+[numthreads(8, 8, 1)]
+void CSClear(uint3 id : SV_DispatchThreadID)
+{
+    uint2 screen = (uint2)_SSPRScreenSize.xy;
+    if (id.x >= screen.x || id.y >= screen.y)
+        return;
+
+    _SSPRDepth[id.xy] = 0xFFFFFFFFu;
+    _SSPROffset[id.xy] = 0xFFFFFFFFu;
+}
+
+[numthreads(8, 8, 1)]
+void CSProject(uint3 id : SV_DispatchThreadID)
+{
+    uint2 screen = (uint2)_SSPRScreenSize.xy;
+    if (id.x >= screen.x || id.y >= screen.y)
+        return;
+
+    float rawDepth = _CameraDepthTexture.Load(int3(id.xy, 0));
+    if (rawDepth <= 0.000001)
+        return;
+
+    float2 uv = (float2(id.xy) + 0.5) * _SSPRScreenSize.zw;
+    float3 worldPos = ComputeWorldSpacePosition(uv, rawDepth, _SSPRInvViewProj);
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+    worldPos += _SSPRCameraPos.xyz;
+#endif
+
+    float dist = dot(worldPos, _ReflectionPlane.xyz) - _ReflectionPlane.w;
+
+    // Only project source pixels clearly above the reflector plane.
+    // A larger threshold prevents the plane itself from dominating the map.
+    if (dist <= 0.02)
+        return;
+
+    if (_SSPRMaxPlaneDistance >= 0.02 && dist > _SSPRMaxPlaneDistance)
+        return;
+
+    float3 mirroredWorldPos = worldPos - 2.0 * dist * _ReflectionPlane.xyz;
+
+    float3 viewDir = normalize(mirroredWorldPos - _SSPRCameraPos.xyz);
+    float denom = dot(viewDir, _ReflectionPlane.xyz);
+    if (abs(denom) <= 1e-5)
+        return;
+    float t = (_ReflectionPlane.w - dot(_SSPRCameraPos.xyz, _ReflectionPlane.xyz)) / denom;
+    if (t <= 0.0)
+        return;
+    float3 hitPoint = _SSPRCameraPos.xyz + viewDir * t;
+
+    if (_SSPRUseReflectorBounds > 0.5)
+    {
+        float3 rel = hitPoint - _SSPRReflectorCenter.xyz;
+        float u = dot(rel, _SSPRReflectorU.xyz);
+        float v = dot(rel, _SSPRReflectorV.xyz);
+        if (abs(u) > _SSPRReflectorHalfSize.x || abs(v) > _SSPRReflectorHalfSize.y)
+            return;
+    }
+
+    float4 clip = mul(_SSPRViewProj, float4(mirroredWorldPos, 1.0));
+    if (clip.w <= 0.0)
+        return;
+
+    float2 targetUV = clip.xy / clip.w * 0.5 + 0.5;
+    #if UNITY_UV_STARTS_AT_TOP
+    targetUV.y = 1.0 - targetUV.y;
+    #endif
+
+    if (targetUV.x < 0.0 || targetUV.x > 1.0 || targetUV.y < 0.0 || targetUV.y > 1.0)
+        return;
+
+    uint2 targetPixel = uint2(targetUV * _SSPRScreenSize.xy);
+    targetPixel = min(targetPixel, screen - 1);
+    if (targetPixel.x >= screen.x || targetPixel.y >= screen.y)
+        return;
+
+    float hitDepth = -mul(_SSPRView, float4(hitPoint, 1.0)).z;
+    if (hitDepth <= 0.000001)
+        return;
+
+    // Reject mappings hidden by geometry in front of the reflector hit point.
+    if (_SSPRDebugFlags.z < 0.5 && _SSPROcclusionThickness > 0.0005)
+    {
+        float targetRawDepth = _CameraDepthTexture.Load(int3(targetPixel, 0));
+        if (targetRawDepth <= 0.000001)
+            return;
+
+        float2 targetPixelUV = (float2(targetPixel) + 0.5) * _SSPRScreenSize.zw;
+        float3 targetWorldPos = ComputeWorldSpacePosition(targetPixelUV, targetRawDepth, _SSPRInvViewProj);
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+        targetWorldPos += _SSPRCameraPos.xyz;
+#endif
+
+        float targetDepth = -mul(_SSPRView, float4(targetWorldPos, 1.0)).z;
+        float thickness = _SSPROcclusionThickness;
+        if (targetDepth + thickness < hitDepth)
+            return;
+    }
+
+    uint depthBits = asuint(hitDepth);
+
+    uint previousDepth;
+    InterlockedMin(_SSPRDepth[targetPixel], depthBits, previousDepth);
+    if (depthBits <= previousDepth)
+    {
+        uint packedSource = (id.x & 0xFFFFu) | ((id.y & 0xFFFFu) << 16);
+        _SSPROffset[targetPixel] = packedSource;
+    }
+}
