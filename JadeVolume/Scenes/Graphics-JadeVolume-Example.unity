@@ -296,13 +296,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 910000600}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a44487661ac249a6914a968aa6e65f13, type: 3}
+  m_Script: {fileID: 11500000, guid: 8c26ed8b94fd4fd0a9fa72a2a7c991a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultMode: 0
-  referencePlane: {fileID: 1601397097}
-  volumeObject: {fileID: 2113685973}
+  defaultReferenceMode: 0
+  referenceDriver: {fileID: 0}
+  referenceRoot: {fileID: 1601397097}
+  previewRoot: {fileID: 2113685973}
+  previewController: {fileID: 2113685974}
+  previewMaterialCount: 2
   toggleKey: 9
+  targetCamera: {fileID: 834273130}
+  referenceCamera:
+    orthographic: 1
+    orthographicSize: 1
+    fieldOfView: 60
+    localPosition: {x: 0, y: 0, z: -1}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+  previewCamera:
+    orthographic: 0
+    orthographicSize: 1
+    fieldOfView: 20
+    localPosition: {x: 0, y: 1.45, z: -4.7}
+    localEulerAngles: {x: 8.673, y: 0, z: 0}
 --- !u!1 &1120903741
 GameObject:
   m_ObjectHideFlags: 0
@@ -678,24 +694,40 @@ MonoBehaviour:
   m_GameObject: {fileID: 2113685973}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 046d327274c24a17b52388037da8a56d, type: 3}
+  m_Script: {fileID: 11500000, guid: 67d0793761204fc9bdbbf8c3ec74d8bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   sourceLight: {fileID: 1120903742}
-  objectMaterial: {fileID: 2100000, guid: 0202e89d1a061f14a848b5212d14f241, type: 2}
+  previewMaterials:
+  - {fileID: 2100000, guid: 0202e89d1a061f14a848b5212d14f241, type: 2}
+  - {fileID: 2100000, guid: e40cba08cc554d169e93982825ddf087, type: 2}
+  currentMaterialIndex: 0
   preferSubstanceAtlas: 1
   densityAtlas: {fileID: 0}
   atlasColumns: 8
   atlasRows: 8
   textureResolution: 64
   regenerateTexture: 0
-  previewShape: 3
+  carrierMode: 1
+  previewShape: 0
   allowRuntimeShapeSwitch: 1
-  cycleShapeKey: 9
+  cycleShapeKey: 0
   radius: 0.34
   edgeSoftness: 0.18
   noiseStrength: 0.22
   noiseFrequency: 5
+  allowMouseRotate: 1
+  mouseButton: 0
+  rotateSpeedX: 1.05
+  rotateSpeedY: 0.75
+  pitchLimits: {x: -65, y: 65}
+  rotationSmoothTime: 0.12
+  rotationInertiaDamping: 4.5
+  previewCamera: {fileID: 834273130}
+  allowScrollZoom: 1
+  zoomSpeed: 2.4
+  zoomDistanceLimits: {x: 1.2, y: 4.5}
+  applyTransformRotation: 1
 --- !u!23 &2113685975
 MeshRenderer:
   m_ObjectHideFlags: 0

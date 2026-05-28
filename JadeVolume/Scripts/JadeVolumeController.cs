@@ -5,6 +5,15 @@ using UnityEngine;
 [RequireComponent(typeof(Renderer))]
 public sealed class JadeVolumeController : MonoBehaviour
 {
+    // Layout-only helper for the jade scene.
+    // This script is NOT part of preview ownership for:
+    // - preview mode switching
+    // - preview material selection
+    // - preview shape
+    // - preview zoom / rotation
+    //
+    // It only keeps the presentation canvas in a fixed layout.
+    // Do not add preview state writes here; use JadeVolumePreviewController / ReferencePreviewToggleController instead.
     [Header("画布显示")]
     [SerializeField, InspectorName("自动保持画布布局")] private bool lockCanvasLayout = true;
     [SerializeField, InspectorName("画布宽度")] private float canvasWidth = 16f;

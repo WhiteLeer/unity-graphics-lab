@@ -329,7 +329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9340912d29a94b4a99cc9447d305a0e, type: 3}
   m_Name: SSRRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     intensity: 1.9
     maxDistance: 12
