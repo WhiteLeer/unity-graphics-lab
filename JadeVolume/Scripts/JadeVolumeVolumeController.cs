@@ -14,14 +14,22 @@ public sealed class JadeVolumeVolumeController : MonoBehaviour
         JadeLump = 3
     }
 
+    public enum PreviewMaterialMode
+    {
+        Default = 0,
+        SimpleJade = 1
+    }
+
     private const string DefaultAtlasResourcePath = "Generated/JadeVolume_PerlinDensityAtlas";
     private const string DefaultMaterialResourcePath = "Generated/M_JadeVolume_Object";
+    private const string SimpleJadeMaterialResourcePath = "Generated/M_JadeVolume_Object_SimpleJade";
 
     [Header("光源")]
     [SerializeField, InspectorName("场景点光源")] private Light sourceLight;
 
     [Header("体纹理")]
     [SerializeField, InspectorName("物体材质")] private Material objectMaterial;
+    [SerializeField, InspectorName("简易玉石材质")] private Material simpleJadeMaterial;
     [SerializeField, InspectorName("优先使用SD体纹理")] private bool preferSubstanceAtlas = true;
     [SerializeField, InspectorName("SD体纹理图集")] private Texture2D densityAtlas;
     [SerializeField, InspectorName("切片列数")] private int atlasColumns = 8;
@@ -29,9 +37,10 @@ public sealed class JadeVolumeVolumeController : MonoBehaviour
     [SerializeField, InspectorName("体纹理分辨率")] private int textureResolution = 48;
     [SerializeField, InspectorName("体纹理刷新")] private bool regenerateTexture;
     [Header("预览形体")]
+    [SerializeField, InspectorName("当前材质模式")] private PreviewMaterialMode previewMaterialMode = PreviewMaterialMode.Default;
     [SerializeField, InspectorName("当前预制形状")] private PreviewShape previewShape = PreviewShape.JadeLump;
     [SerializeField, InspectorName("运行时允许切换")] private bool allowRuntimeShapeSwitch = true;
-    [SerializeField, InspectorName("切换按键")] private KeyCode cycleShapeKey = KeyCode.Tab;
+    [SerializeField, InspectorName("切换按键")] private KeyCode cycleShapeKey = KeyCode.None;
     [SerializeField, InspectorName("球体半径")] private float radius = 0.34f;
     [SerializeField, InspectorName("边缘软化")] private float edgeSoftness = 0.18f;
     [SerializeField, InspectorName("噪声强度")] private float noiseStrength = 0.22f;
@@ -126,18 +135,35 @@ public sealed class JadeVolumeVolumeController : MonoBehaviour
 
         var shader = Shader.Find("SurfaceLab/JadeVolume/VolumeObject");
         var targetMaterial = objectMaterial != null ? objectMaterial : Resources.Load<Material>(DefaultMaterialResourcePath);
+        var simpleTargetMaterial = simpleJadeMaterial != null ? simpleJadeMaterial : Resources.Load<Material>(SimpleJadeMaterialResourcePath);
         if (targetMaterial != null)
         {
             objectMaterial = targetMaterial;
-            if (meshRenderer.sharedMaterial != targetMaterial)
+        }
+        if (simpleTargetMaterial != null)
+        {
+            simpleJadeMaterial = simpleTargetMaterial;
+        }
+
+        var activeMaterial = ResolveActiveMaterial();
+        if (activeMaterial != null)
+        {
+            if (meshRenderer.sharedMaterial != activeMaterial)
             {
-                meshRenderer.sharedMaterial = targetMaterial;
+                meshRenderer.sharedMaterial = activeMaterial;
             }
         }
         else if (shader != null && meshRenderer.sharedMaterial == null)
         {
             meshRenderer.sharedMaterial = new Material(shader) { name = "M_JadeVolume_Object_Runtime" };
         }
+    }
+
+    public void SetPreviewMaterialMode(PreviewMaterialMode mode)
+    {
+        previewMaterialMode = mode;
+        Initialize();
+        Apply();
     }
 
     private void HandleRuntimeInput()
@@ -147,7 +173,7 @@ public sealed class JadeVolumeVolumeController : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(cycleShapeKey))
+        if (cycleShapeKey != KeyCode.None && Input.GetKeyDown(cycleShapeKey))
         {
             previewShape = (PreviewShape)(((int)previewShape + 1) % Enum.GetValues(typeof(PreviewShape)).Length);
         }
@@ -338,6 +364,12 @@ public sealed class JadeVolumeVolumeController : MonoBehaviour
             return;
         }
 
+        var activeMaterial = ResolveActiveMaterial();
+        if (activeMaterial != null && meshRenderer.sharedMaterial != activeMaterial)
+        {
+            meshRenderer.sharedMaterial = activeMaterial;
+        }
+
         meshRenderer.GetPropertyBlock(propertyBlock);
         propertyBlock.SetTexture(VolumeTexId, runtimeTexture);
         propertyBlock.SetVector(LightPositionId, activeLight.transform.position);
@@ -346,6 +378,16 @@ public sealed class JadeVolumeVolumeController : MonoBehaviour
         propertyBlock.SetVector(VolumeBoundsScaleId, transform.lossyScale);
         propertyBlock.SetFloat(ShapeModeId, (float)previewShape);
         meshRenderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private Material ResolveActiveMaterial()
+    {
+        if (previewMaterialMode == PreviewMaterialMode.SimpleJade && simpleJadeMaterial != null)
+        {
+            return simpleJadeMaterial;
+        }
+
+        return objectMaterial;
     }
 
     private Light ResolveLight()

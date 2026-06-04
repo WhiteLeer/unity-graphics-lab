@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// SSR Render Feature - Screen Space Reflection
@@ -13,35 +14,50 @@ public class SSRRenderFeature : ScriptableRendererFeature
     {
         [Header("SSR Parameters")]
         [Range(0.0f, 2.0f)]
-        public float intensity = 1.15f;
+        public float intensity = 1.0f;
 
-        [Range(8, 512)]
-        public int maxSteps = 64;
+        [Range(0.1f, 50.0f)]
+        public float maxDistance = 15.0f;
 
-        [Range(0.05f, 2.0f)]
-        public float stride = 0.2f;
+        [Range(0.005f, 0.5f)]
+        [FormerlySerializedAs("stride")]
+        public float step = 0.05f;
 
-        [Range(0.001f, 0.2f)]
-        public float thickness = 0.06f;
-
-        [Range(0.05f, 50.0f)]
-        public float maxDistance = 12.0f;
-
-        [Range(0.001f, 0.1f)]
-        public float rayStartBias = 0.03f;
-
-        [Range(0.0f, 8.0f)]
-        public float fresnelPower = 4.0f;
-
-        [Header("Edge Fade")]
-        [Range(0.0f, 0.5f)]
-        public float fadeStart = 0.0f;
-
-        [Range(0.0f, 0.5f)]
-        public float fadeEnd = 0.08f;
+        [Range(0.00001f, 0.2f)]
+        public float thickness = 0.0006f;
 
         [Range(0.0f, 1.0f)]
-        public float hitSoftness = 0.35f;
+        public float receiverNormalThreshold = 0.9f;
+
+        public bool enableReceiverFilter = true;
+
+        [Range(0.0f, 1.0f)]
+        public float receiverNormalFade = 0.12f;
+
+        [Range(0.0f, 1.0f)]
+        public float rayStartBias = 0.1f;
+
+        [Range(0.0f, 2.0f)]
+        public float reflectionBlend = 1.0f;
+
+        [Header("Receiver Roughness")]
+        public Texture2D receiverRoughnessMap;
+
+        public Vector2 receiverRoughnessTiling = new Vector2(0.25f, 0.25f);
+
+        public Vector2 receiverRoughnessOffset = Vector2.zero;
+
+        [Range(0.0f, 1.0f)]
+        public float receiverRoughnessStrength = 1.0f;
+
+        [Range(0.0f, 64.0f)]
+        public float receiverMaxBlurPixels = 24.0f;
+
+        [Range(0.0f, 2.0f)]
+        public float fallbackIntensity = 0.35f;
+
+        [Range(0.0f, 1.0f)]
+        public float fallbackRoughness = 0.08f;
 
         [Header("Debug Visualization")]
         public bool enableDebugVisualization = false;
@@ -75,7 +91,7 @@ public class SSRRenderFeature : ScriptableRendererFeature
 
     public override void Create()
     {
-        Shader shader = Shader.Find("Hidden/SSR");
+        Shader shader = Shader.Find("Hidden/SSR_ReflectionProbe");
         if (shader == null)
         {
             Debug.LogError("SSR shader not found!");
@@ -95,8 +111,7 @@ public class SSRRenderFeature : ScriptableRendererFeature
         if (m_Material == null || m_Pass == null)
             return;
 
-        if (renderingData.cameraData.cameraType != CameraType.Game &&
-            renderingData.cameraData.cameraType != CameraType.SceneView)
+        if (renderingData.cameraData.cameraType != CameraType.Game)
             return;
 
         m_Pass.renderPassEvent = settings.renderPassEvent;
