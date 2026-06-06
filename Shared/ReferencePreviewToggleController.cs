@@ -23,7 +23,6 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
         public Vector3 localEulerAngles;
     }
 
-    [SerializeField] private bool defaultReferenceMode = true;
     [SerializeField] private Behaviour referenceDriver;
     [SerializeField] private GameObject referenceRoot;
     [SerializeField] private GameObject previewRoot;

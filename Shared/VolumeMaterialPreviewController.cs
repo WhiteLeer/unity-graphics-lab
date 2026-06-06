@@ -80,7 +80,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     private void OnEnable()
     {
-        EnsureHelperComponents();
+        EnsureHelperComponents(true);
         MigrateLegacySettingsIfNeeded();
         InitializePreviewStateOnce();
         interactionController.CacheCameraDefaults();
@@ -99,10 +99,10 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     private void OnValidate()
     {
         currentMaterialIndex = Mathf.Clamp(currentMaterialIndex, 0, Mathf.Max(0, previewMaterials.Length - 1));
-        EnsureHelperComponents();
+        EnsureHelperComponents(false);
         MigrateLegacySettingsIfNeeded();
 
-        if (!isActiveAndEnabled)
+        if (!isActiveAndEnabled || interactionController == null || renderController == null)
         {
             return;
         }
@@ -141,13 +141,13 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     public float GetPreviewZoomDistance()
     {
-        EnsureHelperComponents();
+        EnsureHelperComponents(true);
         return interactionController.GetPreviewZoomDistance();
     }
 
     public void SetPreviewZoomDistance(float distance)
     {
-        EnsureHelperComponents();
+        EnsureHelperComponents(true);
         interactionController.SetPreviewZoomDistance(distance);
     }
 
@@ -166,12 +166,12 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         previewStateInitialized = true;
     }
 
-    private void EnsureHelperComponents()
+    private void EnsureHelperComponents(bool allowAdd)
     {
         if (interactionController == null)
         {
             interactionController = GetComponent<PreviewInteractionController>();
-            if (interactionController == null)
+            if (interactionController == null && allowAdd)
             {
                 interactionController = (PreviewInteractionController)gameObject.AddComponent(PreferredInteractionControllerType);
             }
@@ -180,7 +180,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         if (renderController == null)
         {
             renderController = GetComponent<VolumePreviewRenderController>();
-            if (renderController == null)
+            if (renderController == null && allowAdd)
             {
                 renderController = (VolumePreviewRenderController)gameObject.AddComponent(PreferredRenderControllerType);
             }
@@ -189,6 +189,11 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     private void MigrateLegacySettingsIfNeeded()
     {
+        if (interactionController == null || renderController == null)
+        {
+            return;
+        }
+
         interactionController.AdoptLegacySettings(
             previewCamera,
             allowMouseRotate,
@@ -277,7 +282,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     private void Apply()
     {
-        EnsureHelperComponents();
+        EnsureHelperComponents(true);
 
         var activeMaterial = ResolveActiveMaterial();
         if (activeMaterial == null)

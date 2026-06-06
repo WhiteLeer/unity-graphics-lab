@@ -6,24 +6,18 @@ Shader "SurfaceLab/Crystal/VolumeObject"
         _ShadowTint("暗部颜色", Color) = (0.08, 0.1, 0.16, 1)
         _EdgeTint("边缘冷光", Color) = (0.52, 0.88, 1, 1)
         _GlowTint("内部辉光", Color) = (0.98, 0.72, 1, 1)
-        _DensityTex("三维噪声图", 3D) = "" {}
 
-        _NoiseFrequency("噪声频率", Range(0.25, 8.0)) = 2.4
-        _NoiseAmount("噪声扰动", Range(0.0, 0.25)) = 0.06
         _ShapeMode("形状模式", Range(0, 3)) = 0
-        _ShapeBlend("形体圆润", Range(0.0, 0.2)) = 0.03
-        _SurfaceOffset("表面偏移", Range(-0.1, 0.1)) = 0.0
 
         _RefractionIndex("折射率", Range(1.01, 2.0)) = 1.18
         _InternalDistance("内部取样距离", Range(0.2, 4.0)) = 1.8
         _InternalStep("内部取样步长", Range(0.02, 0.5)) = 0.12
-        _Absorption("内部吸收", Range(0.2, 4.0)) = 1.15
         _GlowStrength("辉光强度", Range(0.0, 8.0)) = 2.1
-        _FresnelPower("边缘亮度范围", Range(0.2, 8.0)) = 4.4
-        _SpecularPower("高光锐利度", Range(8.0, 256.0)) = 84
         _SpecularIntensity("高光强度", Range(0.0, 8.0)) = 2.2
+        _ShardFill("晶块填充", Range(0, 1)) = 0.92
+        _ShardColor("晶块颜色", Range(0, 1)) = 0.92
 
-        _TraceSteps("主追踪步数", Range(24, 256)) = 128
+        _TraceSteps("主追踪步数", Range(1, 24)) = 24
         _HitEpsilon("命中精度", Range(0.001, 0.03)) = 0.004
         _MaxDistance("最大距离", Range(0.5, 4.0)) = 2.0
         _NormalStep("法线精度", Range(0.001, 0.03)) = 0.01
@@ -57,19 +51,14 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float4 _ShadowTint;
                 float4 _EdgeTint;
                 float4 _GlowTint;
-                float _NoiseFrequency;
-                float _NoiseAmount;
                 float _ShapeMode;
-                float _ShapeBlend;
-                float _SurfaceOffset;
                 float _RefractionIndex;
                 float _InternalDistance;
                 float _InternalStep;
-                float _Absorption;
                 float _GlowStrength;
-                float _FresnelPower;
-                float _SpecularPower;
                 float _SpecularIntensity;
+                float _ShardFill;
+                float _ShardColor;
                 float _TraceSteps;
                 float _HitEpsilon;
                 float _MaxDistance;
@@ -77,9 +66,6 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float _PreviewPitch;
                 float _PreviewYaw;
             CBUFFER_END
-
-            TEXTURE3D(_DensityTex);
-            SAMPLER(sampler_DensityTex);
 
             float3 _VolumeLightPositionWS;
             float4 _VolumeLightColor;
@@ -123,12 +109,6 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 return tFar >= max(tNear, 0.0);
             }
 
-            float SampleNoise(float3 positionOS)
-            {
-                float3 uvw = frac(positionOS * _NoiseFrequency + 0.5);
-                return SAMPLE_TEXTURE3D(_DensityTex, sampler_DensityTex, uvw).r;
-            }
-
             float SdSphere(float3 p, float r)
             {
                 return length(p) - r;
@@ -162,12 +142,15 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 return p;
             }
 
+            static const float kCrystalShapeBlend = 0.03;
+            static const float kCrystalSurfaceOffset = 0.0;
+
             struct CrystalState
             {
                 float3 cp, cn, cr, ro, rd, ss, oc, cc, gl, vb;
                 float4 fc;
                 float tt, cd, sd, io, oa, td, maxDistance;
-                int es, ec;
+                int es, ec, bounceIndex;
             };
 
             CrystalState InitState()
@@ -193,6 +176,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 st.maxDistance = 0.0;
                 st.es = 0;
                 st.ec = 0;
+                st.bounceIndex = 0;
                 return st;
             }
 
@@ -201,7 +185,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float lenSq = dot(v, v);
                 if (lenSq <= 1e-12)
                 {
-                    return 0.0.xxx;
+                    return 0.0;
                 }
 
                 return v * rsqrt(lenSq);
@@ -218,24 +202,69 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float k = 1.0 - eta * eta * (1.0 - d * d);
                 if (k < 0.0)
                 {
-                    return 0.0.xxx;
+                    return 0.0;
                 }
 
                 return eta * i - (eta * d + sqrt(k)) * n;
             }
 
+            float Hash11(float n)
+            {
+                return frac(sin(n) * 43758.5453123);
+            }
+
+            float3 Hash33(float3 p)
+            {
+                p = frac(p * 0.1031);
+                p += dot(p, p.yzx + 33.33);
+                return frac((p.xxy + p.yzz) * p.zyx);
+            }
+
             float3 SanitizeColor(float3 c)
             {
-                c = any(isnan(c)) ? 0.0.xxx : c;
-                c = any(isinf(c)) ? 0.0.xxx : c;
+                c = any(isnan(c)) ? 0.0 : c;
+                c = any(isinf(c)) ? 0.0 : c;
                 return max(c, 0.0);
+            }
+
+            float3 CrystalNeutralTint()
+            {
+                return lerp(_ShadowTint.rgb, _BaseColor.rgb, 0.34);
+            }
+
+            float3 CrystalHighlightTint()
+            {
+                return lerp(_BaseColor.rgb, _EdgeTint.rgb, 0.46);
+            }
+
+            float3 CrystalWarmTint()
+            {
+                return lerp(_BaseColor.rgb, _GlowTint.rgb, 0.56);
+            }
+
+            float3 CrystalCoolTint()
+            {
+                return lerp(_BaseColor.rgb, _EdgeTint.rgb, 0.72);
+            }
+
+            float3 CrystalReferenceBackground(float3 rayDirection)
+            {
+                float horizon = saturate(rayDirection.y * 0.5 + 0.5);
+                float3 baseColor = lerp(
+                    lerp(_ShadowTint.rgb, _BaseColor.rgb, 0.45),
+                    lerp(_EdgeTint.rgb, _GlowTint.rgb, 0.35),
+                    horizon
+                );
+                float3 g = abs(rayDirection + float3(0.0, 0.5, 0.0));
+                float3 gradient = length(g * g * g) * lerp(0.18, 0.30, horizon);
+                return SanitizeColor(baseColor + gradient);
             }
 
             float3 CrystalLattice(float3 p, int iter, float angleDeg)
             {
                 float angle = radians(angleDeg);
                 [loop]
-                for (int i = 0; i < 9; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     if (i >= iter)
                     {
@@ -267,7 +296,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
             {
                 p.xz = Rot2(p.xz, radians(-31.0));
                 p.xy = Rot2(p.xy, radians(29.0));
-                return CrystalLattice(p * 0.9, 3, 52.0);
+                return CrystalLattice(p * 0.90, 3, 52.0);
             }
 
             float3 StaticCrystalFoldD(float3 p)
@@ -282,7 +311,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 int shapeMode = (int)round(_ShapeMode);
                 if (shapeMode == 1)
                 {
-                    return SdBox(p, float3(0.24, 0.24, 0.24)) - _ShapeBlend;
+                    return SdBox(p, float3(0.24, 0.24, 0.24)) - kCrystalShapeBlend;
                 }
                 if (shapeMode == 2)
                 {
@@ -296,9 +325,9 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                     float main = SdSphere(q, 0.30);
                     float bumpA = SdSphere(q - float3(-0.12, 0.08, 0.02), 0.16);
                     float bumpB = SdSphere(q - float3(0.11, -0.05, -0.07), 0.14);
-                    return min(main, min(bumpA, bumpB)) - _ShapeBlend;
+                    return min(main, min(bumpA, bumpB)) - kCrystalShapeBlend;
                 }
-                return SdSphere(p, 0.30);
+                return SdSphere(p, 0.30) - kCrystalShapeBlend;
             }
 
             float CrystalShapeSdfLocal(float3 p)
@@ -335,14 +364,14 @@ Shader "SurfaceLab/Crystal/VolumeObject"
 
             float Field(float3 p)
             {
-                float noise = SampleNoise(p) - 0.5;
-                return BaseShapeSdf(p) - noise * _NoiseAmount - _SurfaceOffset;
+                return BaseShapeSdf(p) - kCrystalSurfaceOffset;
             }
 
             float CrystalDistance(float3 p, out float3 crystalGlow);
             float CrystalDistance(float3 p);
-            float CrystalInteriorFacetValue(float3 p);
             float CrystalInteriorFacetValueLocal(float3 p);
+            float CrystalInteriorFacetValueLocal(float3 p, out float3 crystalGlow);
+            float CrystalOuterShellDistanceLocal(float3 p);
             float CrystalOuterShellDistance(float3 p);
 
             bool TraceVolume(float3 roOS, float3 rdOS, out float3 hitOS, out float3 hitWS)
@@ -358,11 +387,12 @@ Shader "SurfaceLab/Crystal/VolumeObject"
 
                 float t = max(tNear, 0.0);
                 float endT = min(tFar, t + _MaxDistance);
+                int traceSteps = (int)_TraceSteps;
 
                 [loop]
-                for (int i = 0; i < 256; i++)
+                for (int i = 0; i < 24; i++)
                 {
-                    if (i >= (int)_TraceSteps || t > endT)
+                    if (i >= traceSteps || t > endT)
                     {
                         break;
                     }
@@ -395,41 +425,60 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 return normalize(n);
             }
 
+            float CrystalOuterShellDistanceLocal(float3 p)
+            {
+                return CrystalShapeSdfLocal(p) - kCrystalSurfaceOffset;
+            }
+
             float CrystalOuterShellDistance(float3 p)
             {
                 p = RotatePreviewToVolume(p);
-                return CrystalShapeSdfLocal(p) - _SurfaceOffset;
+                return CrystalOuterShellDistanceLocal(p);
             }
 
             float PreviewCrystalFieldLocal(float3 p, out float3 crystalGlow)
             {
+                float shardFill = saturate(_ShardFill);
+                float shardColor = saturate(_ShardColor);
                 float3 warp = float3(
-                    sin(p.y * 6.0 + p.z * 4.0),
-                    sin(p.z * 5.0 - p.x * 4.5),
-                    sin(p.x * 5.5 + p.y * 3.5)
-                ) * 0.024;
+                    sin(p.y * 5.8 + p.z * 4.2),
+                    sin(p.z * 5.1 - p.x * 4.6),
+                    sin(p.x * 5.4 + p.y * 3.6)
+                ) * lerp(0.0, 0.024, shardFill);
                 p += warp;
-                float noise = (SampleNoise(p * 0.88) - 0.5) * (_NoiseAmount * 0.025);
 
-                float3 qA = StaticCrystalFoldA(p * 1.28 + float3(0.00, 0.00, 0.00));
-                float rawA = SdBox(qA, float3(1.00, 1.00, 1.00)) - 0.010 - noise;
-                float shellA = abs(rawA) - 0.00092;
+                float3 qA = StaticCrystalFoldA(p * 1.34 + float3(0.00, 0.00, 0.00));
+                float rawA = SdBox(qA, float3(1.00, 1.00, 1.00)) - 0.010;
+                float shellA = abs(rawA) - 0.00065;
 
-                float3 qB = StaticCrystalFoldB(p * 1.06 + float3(0.08, -0.03, 0.05));
-                float rawB = SdBox(qB, float3(0.96, 1.04, 0.90)) - 0.008 + noise * 0.30;
-                float shellB = abs(rawB) - 0.00102;
+                float3 qB = StaticCrystalFoldB(p * 1.12 + float3(0.08, -0.03, 0.05));
+                float rawB = SdBox(qB, float3(0.94, 1.06, 0.88)) - 0.008;
+                float shellB = abs(rawB) - 0.00072;
 
-                float3 qC = StaticCrystalFoldC(p * 1.40 + float3(-0.05, 0.06, -0.04));
-                float rawC = SdBox(qC, float3(1.04, 0.90, 0.98)) - 0.007 - noise * 0.22;
-                float shellC = abs(rawC) - 0.00106;
+                float3 qC = StaticCrystalFoldC(p * 1.48 + float3(-0.05, 0.06, -0.04));
+                float rawC = SdBox(qC, float3(1.06, 0.88, 0.98)) - 0.007;
+                float shellC = abs(rawC) - 0.00078;
 
-                float shellField = min(shellA, min(shellB, shellC));
-                float3 glowVec = max(qA * qA + qB * qB * 0.72 + qC * qC * 0.56, 1e-6);
-                crystalGlow = (
-                    exp(-abs(rawA) * 42.0) * SafeNormalize3(glowVec) * float3(1.00, 0.74, 0.92) * 0.0017 +
-                    exp(-abs(rawB) * 36.0) * SafeNormalize3(glowVec.zxy) * float3(0.78, 0.90, 1.00) * 0.0014 +
-                    exp(-abs(rawC) * 32.0) * SafeNormalize3(glowVec.yzx) * float3(1.00, 0.82, 0.72) * 0.0012
+                float3 qD = StaticCrystalFoldD(p * 1.06 + float3(0.03, 0.08, -0.06));
+                float rawD = SdBox(qD, float3(0.86, 1.14, 0.84)) - 0.007;
+                float shellD = abs(rawD) - 0.00074;
+
+                float shellField = min(min(shellA, shellB), min(shellC, shellD));
+                float3 glowVec = max(
+                    qA * qA + qB * qB * 0.74 + qC * qC * 0.58 + qD * qD * 0.48,
+                    1e-6
                 );
+                float3 tintA = float3(1.00, 0.74, 0.92);
+                float3 tintB = float3(0.78, 0.90, 1.00);
+                float3 tintC = float3(1.00, 0.82, 0.72);
+                float3 tintD = float3(0.88, 0.76, 1.00);
+                crystalGlow = (
+                    exp(-abs(rawA) * 54.0) * SafeNormalize3(glowVec) * tintA * 0.0019 +
+                    exp(-abs(rawB) * 46.0) * SafeNormalize3(glowVec.zxy) * tintB * 0.0016 +
+                    exp(-abs(rawC) * 38.0) * SafeNormalize3(glowVec.yzx) * tintC * 0.0014 +
+                    exp(-abs(rawD) * 50.0) * SafeNormalize3(glowVec.xzy) * tintD * 0.0015
+                ) * lerp(0.85, 1.15, shardColor);
+                shellField = lerp(shellField, shellField + 0.012 * sign(shellField), shardFill);
                 return shellField;
             }
 
@@ -438,13 +487,13 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 p = RotatePreviewToVolume(p);
                 float outerShape = CrystalShapeSdfLocal(p);
                 float outerShell = outerShape > 0.0
-                    ? (outerShape - _SurfaceOffset)
-                    : (abs(outerShape - _SurfaceOffset) - 0.0015);
+                    ? (outerShape - kCrystalSurfaceOffset)
+                    : (abs(outerShape - kCrystalSurfaceOffset) - 0.0015);
 
                 float interiorField = PreviewCrystalFieldLocal(p, crystalGlow);
                 float interiorMask = smoothstep(-0.22, -0.03, -outerShape);
                 float clippedInterior = max(outerShape + 0.006, interiorField);
-                crystalGlow *= interiorMask * saturate(0.012 - abs(interiorField)) / 0.012;
+                crystalGlow *= interiorMask * saturate(0.008 - abs(interiorField)) / 0.008;
                 return min(abs(outerShell) - 0.0015, clippedInterior);
             }
 
@@ -454,26 +503,19 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 return CrystalDistance(p, crystalGlow);
             }
 
-            float CrystalInteriorFacetValue(float3 p)
+            float CrystalInteriorFacetValueLocal(float3 p, out float3 crystalGlow)
             {
-                p = RotatePreviewToVolume(p);
-                return CrystalInteriorFacetValueLocal(p);
-            }
-
-            float CrystalInteriorFacetValueLocal(float3 p)
-            {
-                float3 glow;
-                return PreviewCrystalFieldLocal(p, glow);
+                return PreviewCrystalFieldLocal(p, crystalGlow);
             }
 
             void ResolveCrystalHit(float sd, inout CrystalState st)
             {
                 if (abs(sd) < _HitEpsilon)
                 {
-                    st.oc = 1.0.xxx;
+                    st.oc = 1.0;
                     st.io = max(_RefractionIndex, 1.001);
                     st.oa = 0.0;
-                    st.ss = 0.0.xxx;
+                    st.ss = 0.0;
                     st.vb = float3(0.0, 10.0, 2.8);
                     st.ec = 2;
                 }
@@ -483,21 +525,23 @@ Shader "SurfaceLab/Crystal/VolumeObject"
             {
                 st.vb.x = 0.0;
                 st.cd = 0.0;
-                st.gl = 0.0.xxx;
+                st.gl = 0.0;
+                int traceSteps = (int)_TraceSteps;
 
                 [loop]
-                for (int i = 0; i < 256; i++)
+                for (int i = 0; i < 24; i++)
                 {
-                    if (i >= (int)_TraceSteps)
+                    if (i >= traceSteps)
                     {
                         break;
                     }
 
                     float3 samplePos = st.ro + st.rd * st.cd;
+                    float3 sampleLocal = RotatePreviewToVolume(samplePos);
 
                     if (!includeInteriorShells)
                     {
-                        st.sd = CrystalOuterShellDistance(samplePos);
+                        st.sd = CrystalOuterShellDistanceLocal(sampleLocal);
                         st.cd += max(st.sd, _HitEpsilon * 0.5);
                         st.td += st.sd;
                         if (st.sd < _HitEpsilon || st.cd > st.maxDistance)
@@ -508,24 +552,28 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                         continue;
                     }
 
-                    float outerShape = CrystalShapeSdf(samplePos) - _SurfaceOffset;
+                    float outerShape = CrystalOuterShellDistanceLocal(sampleLocal);
                     if (outerShape > _HitEpsilon)
                     {
-                        st.cd = st.maxDistance + _HitEpsilon;
-                        break;
+                        st.cd += max(outerShape * 0.25, _HitEpsilon * 1.25);
+                        st.td += outerShape;
+                        if (st.cd > st.maxDistance)
+                        {
+                            break;
+                        }
+                        continue;
                     }
 
-                    float3 localGlow = 0.0.xxx;
-                    st.sd = CrystalInteriorFacetValue(samplePos);
-                    PreviewCrystalFieldLocal(RotatePreviewToVolume(samplePos), localGlow);
-                    st.gl += localGlow * smoothstep(-0.22, -0.03, -outerShape);
+                    float3 localGlow = 0.0;
+                    st.sd = CrystalInteriorFacetValueLocal(sampleLocal, localGlow);
+                    st.gl += localGlow * smoothstep(-0.16, -0.015, -outerShape);
                     if (abs(st.sd) < _HitEpsilon)
                     {
                         ResolveCrystalHit(st.sd, st);
                         break;
                     }
 
-                    st.cd += max(abs(st.sd) * 0.28, max(_InternalStep * 0.035, _HitEpsilon));
+                    st.cd += max(abs(st.sd) * 0.28, max(_InternalStep * 0.04, _HitEpsilon * 1.05));
                     st.td += abs(st.sd);
                     if (st.cd > st.maxDistance)
                     {
@@ -539,41 +587,45 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float3 kx = st.cp - float3(_NormalStep, 0.0, 0.0);
                 float3 ky = st.cp - float3(0.0, _NormalStep, 0.0);
                 float3 kz = st.cp - float3(0.0, 0.0, _NormalStep);
-                float center = includeInteriorShells ? CrystalInteriorFacetValue(st.cp) : CrystalOuterShellDistance(st.cp);
-                float dx = includeInteriorShells ? CrystalInteriorFacetValue(kx) : CrystalOuterShellDistance(kx);
-                float dy = includeInteriorShells ? CrystalInteriorFacetValue(ky) : CrystalOuterShellDistance(ky);
-                float dz = includeInteriorShells ? CrystalInteriorFacetValue(kz) : CrystalOuterShellDistance(kz);
+                float3 cpLocal = RotatePreviewToVolume(st.cp);
+                float3 kxLocal = RotatePreviewToVolume(kx);
+                float3 kyLocal = RotatePreviewToVolume(ky);
+                float3 kzLocal = RotatePreviewToVolume(kz);
+                float3 ignoreGlow = 0.0;
+                float center = includeInteriorShells ? CrystalInteriorFacetValueLocal(cpLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(cpLocal);
+                float dx = includeInteriorShells ? CrystalInteriorFacetValueLocal(kxLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(kxLocal);
+                float dy = includeInteriorShells ? CrystalInteriorFacetValueLocal(kyLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(kyLocal);
+                float dz = includeInteriorShells ? CrystalInteriorFacetValueLocal(kzLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(kzLocal);
                 float3 outerNormal = SafeNormalize3(center - float3(dx, dy, dz));
-
-                if (!includeInteriorShells)
-                {
-                    st.cn = outerNormal;
-                    return;
-                }
-
                 st.cn = outerNormal;
             }
 
             void ShadeCrystal(inout CrystalState st)
             {
-                st.cc = _ShadowTint.rgb + length(pow(abs(st.rd + float3(0.0, 0.5, 0.0)), 3.0)) * 0.30 + st.gl;
-                float3 l = SafeNormalize3(float3(0.9, 0.7, 0.5));
+                float shardColor = saturate(_ShardColor);
+
+                float3 lRef = SafeNormalize3(float3(0.9, 0.7, 0.5));
+                float3 glowHue = lerp(_GlowTint.rgb, _EdgeTint.rgb, saturate(st.gl.x * lerp(16.0, 10.0, shardColor)));
+                glowHue = lerp(glowHue, _BaseColor.rgb, saturate(st.gl.y * lerp(12.0, 8.0, shardColor)));
+                st.cc = CrystalReferenceBackground(st.rd) * 0.78 + st.gl * (0.48 + glowHue * 0.24);
                 if (st.cd > st.maxDistance)
                 {
                     st.oa = 1.0;
                     return;
                 }
 
-                float df = saturate(length(st.cn * l));
+                float dfRef = saturate(length(st.cn * lRef));
                 float hue = saturate(st.cn.x * 0.5 + 0.5);
                 float height = saturate(st.cn.y * 0.5 + 0.5);
                 float3 crystalTint = lerp(_GlowTint.rgb, _EdgeTint.rgb, hue);
-                crystalTint = lerp(crystalTint, _BaseColor.rgb, height * 0.42);
-                float3 fr = pow(1.0 - df, 3.0) * lerp(st.cc, lerp(_EdgeTint.rgb, float3(1.0, 1.0, 1.0), 0.2), 0.66);
-                float sp = pow(saturate(1.0 - length(cross(st.cr, st.cn * l))), 1.2) * (_SpecularIntensity * 0.18);
-                float ao = min(CrystalOuterShellDistance(st.cp + st.cn * 0.24) - 0.24, 0.24) * 0.18;
-                float3 interiorGlow = st.gl * (_GlowStrength * 1.55);
-                st.cc = lerp(st.oc * (crystalTint * (df + 0.10) + fr + st.ss) + fr + sp + ao + interiorGlow, crystalTint, st.vb.x * 0.10);
+                crystalTint = lerp(crystalTint, _BaseColor.rgb, height * 0.28);
+                crystalTint = lerp(crystalTint, lerp(_GlowTint.rgb, _EdgeTint.rgb, shardColor), 0.18);
+                float frPow = 1.0 - dfRef;
+                frPow *= frPow * frPow;
+                float3 fr = frPow * lerp(st.cc, lerp(_EdgeTint.rgb, float3(1.0, 1.0, 1.0), 0.08), 0.40);
+                float sp = pow(saturate(1.0 - length(cross(st.cr, st.cn * lRef))), 1.2) * (_SpecularIntensity * 0.18);
+                float3 interiorGlow = st.gl * (0.40 + glowHue * 0.18) * (_GlowStrength * lerp(0.28, 0.40, shardColor));
+                st.cc = lerp(st.oc * (crystalTint * (dfRef * 0.50 + 0.06) + fr + st.ss) + fr + sp + interiorGlow, crystalTint, st.vb.x * 0.10);
             }
 
             float4 Frag(Varyings input) : SV_Target
@@ -598,14 +650,15 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 }
 
                 CrystalState st = InitState();
-                st.tt = _Time.y + 25.0;
+                st.tt = 0.0;
                 st.ro = roOS + rdOS * max(enterT, 0.0);
                 st.rd = rdOS;
                 st.maxDistance = min(max(exitT - max(enterT, 0.0), _HitEpsilon * 2.0), _MaxDistance);
 
                 [loop]
-                for (int bounce = 0; bounce < 25; bounce++)
+                for (int bounce = 0; bounce < 3; bounce++)
                 {
+                    st.bounceIndex = bounce;
                     bool includeInteriorShells = bounce > 0;
                     TraceCrystal(st, includeInteriorShells);
                     st.cp = st.ro + st.rd * st.cd;
@@ -630,7 +683,12 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                     }
 
                     st.es--;
-                    st.oa = saturate(0.018 + length(st.gl) * 0.12 + bounce * 0.0045);
+                    st.oa = saturate(
+                        bounce == 0
+                            ? (0.0014 + length(st.gl) * 0.006)
+                            : (0.016 + length(st.gl) * 0.045 + bounce * 0.0012)
+                    );
+                    st.oa *= 0.22;
 
                     ShadeCrystal(st);
                     st.fc += float4(SanitizeColor(st.cc) * st.oa, st.oa) * (1.0 - st.fc.a);

@@ -22,26 +22,21 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Absorption: 1.9
-    - _FresnelPower: 2.8
-    - _GlowStrength: 0.42
-    - _HitEpsilon: 0.0025
-    - _InternalDistance: 1.65
-    - _InternalStep: 0.022
-    - _MaxDistance: 3
-    - _NoiseAmount: 0.028
-    - _NoiseFrequency: 2.4
-    - _NormalStep: 0.0065
-    - _RefractionIndex: 1.24
-    - _ShapeBlend: 0.03
-    - _ShapeMode: 3
-    - _SpecularIntensity: 1.05
-    - _SpecularPower: 164
-    - _SurfaceOffset: 0
-    - _TraceSteps: 224
+    - _GlowStrength: 8
+    - _HitEpsilon: 0.001
+    - _InternalDistance: 4
+    - _InternalStep: 0.02
+    - _MaxDistance: 4
+    - _NormalStep: 0.004
+    - _RefractionIndex: 2
+    - _ShapeMode: 1
+    - _ShardColor: 1
+    - _ShardFill: 0.583
+    - _SpecularIntensity: 1.04
+    - _TraceSteps: 24
     m_Colors:
-    - _BaseColor: {r: 0.78, g: 0.7, b: 0.9, a: 1}
-    - _EdgeTint: {r: 0.74, g: 0.88, b: 1, a: 1}
-    - _GlowTint: {r: 1, g: 0.7, b: 0.9, a: 1}
-    - _ShadowTint: {r: 0.35, g: 0.25, b: 0.45, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EdgeTint: {r: 1, g: 1, b: 1, a: 1}
+    - _GlowTint: {r: 0.7264151, g: 0.56537026, b: 0.6871359, a: 1}
+    - _ShadowTint: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
