@@ -1,27 +1,22 @@
 # unity-graphics-lab
 
-In-project Git root for graphics rendering experiments and support assets.
+Unity 图形实验场：用于沉淀可复现的渲染算法验证、效果对比与工程化示例。
 
-## Layout
+## 目录约定
 
 - `Shared/`
-  - Editor utilities, URP pipeline assets, screenshots, shared materials, and common template scenes.
-- `Grayscale/`
-- `SSAO/`
+  - 共用脚本、URP 管线资产、截图、模板场景与基础材质
 - `ReflectionEffects/`
-  - `SSPR/`
   - `SSR/`
-- `Bloom/`
-- `DoF/`
-- `SSGI/`
-- `MotionBlur/`
-- `ColorGradingToneMapping/`
+  - `SSPR/`
 - `Crystal/`
 - `SSS/`
+- 其他效果目录
+  - 按效果名称单独建目录，而不是再按 `Post`、`Surface` 一类技术桶拆分
 
-## Current convention
+## 组织原则
 
-- One effect folder.
-- One local example scene per effect.
-- Shared infrastructure stays under `Shared/`.
-- The top level is organized by feature names instead of technical buckets like `Post` or `SurfaceLab`.
+- 一个效果一个文件夹。
+- 一个效果至少一个本地示例场景。
+- 参考实现与可调预览实现尽量分离。
+- 公共基础设施统一放在 `Shared/`，避免在各效果目录重复堆副本。
