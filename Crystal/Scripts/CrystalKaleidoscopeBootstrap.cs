@@ -87,12 +87,6 @@ public sealed class CrystalKaleidoscopeBootstrap : MonoBehaviour
             return;
         }
 
-        cam.orthographic = true;
-        cam.orthographicSize = 1f;
-        cam.transform.position = new Vector3(0f, 0f, -1f);
-        cam.transform.rotation = Quaternion.identity;
-        cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = Color.black;
         runtimeCamera = cam;
 
         if (runtimeMaterial == null || !Application.isPlaying)

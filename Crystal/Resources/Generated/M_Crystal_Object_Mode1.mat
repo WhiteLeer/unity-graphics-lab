@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Crystal_Object_PreviewLike
-  m_Shader: {fileID: 4800000, guid: 2f677d0b7f4e4c18b6f7cc37d912a11, type: 3}
+  m_Name: M_Crystal_Object_Mode1
+  m_Shader: {fileID: 4800000, guid: 870c372e4c0f4dc5838d49716d2e0e90, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -22,26 +22,27 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Absorption: 2.2
-    - _FresnelPower: 2.8
-    - _GlowStrength: 0.35
+    - _Absorption: 1.5
+    - _FresnelPower: 4.2
+    - _GlowStrength: 1.95
     - _HitEpsilon: 0.0018
-    - _InternalDistance: 2.3
+    - _InternalDistance: 2.6
     - _InternalStep: 0.01
     - _MaxDistance: 3
-    - _NoiseAmount: 0.024
-    - _NoiseFrequency: 3.1
-    - _NormalStep: 0.0045
-    - _RefractionIndex: 1.22
+    - _NoiseAmount: 0.01
+    - _NoiseFrequency: 2.8
+    - _NormalStep: 0.004
+    - _RefractionIndex: 1.24
     - _ShapeBlend: 0.03
     - _ShapeMode: 1
-    - _SpecularIntensity: 1.35
+    - _SpecularIntensity: 1.42
     - _SpecularPower: 188
     - _SurfaceOffset: 0
     - _TraceSteps: 256
+    - _VariantMode: 1
     m_Colors:
-    - _BaseColor: {r: 0.8, g: 0.68, b: 0.9, a: 1}
-    - _EdgeTint: {r: 0.56, g: 0.86, b: 1, a: 1}
-    - _GlowTint: {r: 0.95, g: 0.55, b: 0.88, a: 1}
-    - _ShadowTint: {r: 0.16, g: 0.11, b: 0.24, a: 1}
+    - _BaseColor: {r: 0.78, g: 0.68, b: 0.88, a: 1}
+    - _EdgeTint: {r: 0.64, g: 0.9, b: 1, a: 1}
+    - _GlowTint: {r: 0.98, g: 0.66, b: 0.9, a: 1}
+    - _ShadowTint: {r: 0.22, g: 0.15, b: 0.3, a: 1}
   m_BuildTextureStacks: []
