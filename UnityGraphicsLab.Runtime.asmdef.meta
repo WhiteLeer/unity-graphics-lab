@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 8c94c396c3764a09b6190a68552f2f1b
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  assemblyDefinition: UnityGraphicsLab.Runtime.asmdef
+  assemblyDefinitionReferences: []
+  m_AssemblyName: UnityGraphicsLab.Runtime
+  m_RootNamespace: UnityGraphicsLab
+  m_AllowUnsafeCode: 0
+  m_OverrideReferences: 0
+  m_PrecompiledReferences: []
+  m_AutoReferenced: 1
+  m_DefineConstraints: []
+  m_VersionDefines: []
+  m_NoEngineReferences: 0

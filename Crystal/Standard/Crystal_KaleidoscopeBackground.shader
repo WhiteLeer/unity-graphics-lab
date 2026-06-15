@@ -22,8 +22,8 @@ Shader "MaterialFX/Crystal/KaleidoscopeBackground"
 
             float3 SanitizeColor(float3 c)
             {
-                c = any(isnan(c)) ? 0.0.xxx : c;
-                c = any(isinf(c)) ? 0.0.xxx : c;
+                c = any(isnan(c)) ? 0.0 : c;
+                c = any(isinf(c)) ? 0.0 : c;
                 return max(c, 0.0);
             }
 

@@ -9,15 +9,16 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     // Ownership contract for preview state:
     // 1. This controller owns only high-level preview state: runtime shape and active material index.
     // 2. PreviewInteractionController owns runtime rotation and zoom.
-    // 3. VolumePreviewRenderController owns carrier mesh, density texture generation, and shader property binding.
+    // 3. VolumePreviewRenderController owns prebuilt carrier activation, density texture generation, and shader property binding.
     // 4. ReferencePreviewToggleController owns only reference/preview mode switching and per-mode zoom persistence.
     // 5. Material _ShapeMode may seed runtime shape during material changes, but it is not a second live owner.
     //
     // If you need new behavior, decide which owner should change. Do not add side writes in random scene helpers.
     public enum CarrierMode
     {
-        Quad = 0,
-        Cube = 1
+        Sphere = 0,
+        Cube = 1,
+        Capsule = 2
     }
 
     public enum PreviewShape
@@ -28,7 +29,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         JadeLump = 3
     }
 
-    [Header("Materials")]
+    [HideInInspector]
     [SerializeField] private Material[] previewMaterials = Array.Empty<Material>();
     [SerializeField] private int currentMaterialIndex;
 
@@ -41,6 +42,9 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     [SerializeField] private PreviewInteractionController interactionController;
     [SerializeField] private VolumePreviewRenderController renderController;
 
+    [HideInInspector]
+    [SerializeField] private VolumePreviewSceneProfile templateProfile;
+
     // Legacy serialized settings retained only to migrate existing scene data into the new helper components.
     [Header("Legacy Migration")]
     [SerializeField, HideInInspector] private Light sourceLight;
@@ -50,7 +54,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     [SerializeField, HideInInspector] private int atlasRows = 8;
     [SerializeField, HideInInspector] private int textureResolution = 48;
     [SerializeField, HideInInspector] private bool regenerateTexture;
-    [SerializeField, HideInInspector] private CarrierMode carrierMode = CarrierMode.Quad;
+    [SerializeField, HideInInspector] private CarrierMode carrierMode = CarrierMode.Cube;
     [SerializeField, HideInInspector] private float radius = 0.34f;
     [SerializeField, HideInInspector] private float edgeSoftness = 0.18f;
     [SerializeField, HideInInspector] private float noiseStrength = 0.22f;
@@ -122,10 +126,19 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         Apply();
     }
 
+    public void SetCarrierMode(CarrierMode mode)
+    {
+        EnsureHelperComponents(true);
+        renderController.SetCarrierMode(mode);
+        Apply();
+    }
+
     public void SetPreviewShape(PreviewShape shape)
     {
         previewShape = shape;
+        carrierMode = MapPreviewShapeToCarrierMode(shape);
         previewStateInitialized = true;
+        renderController.SetCarrierMode(carrierMode);
         Apply();
     }
 
@@ -139,6 +152,16 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         return currentMaterialIndex;
     }
 
+    public int GetPreviewMaterialCount()
+    {
+        if (templateProfile != null && templateProfile.PreviewModeCount > 0)
+        {
+            return templateProfile.PreviewModeCount;
+        }
+
+        return previewMaterials != null ? previewMaterials.Length : 0;
+    }
+
     public float GetPreviewZoomDistance()
     {
         EnsureHelperComponents(true);
@@ -149,6 +172,17 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     {
         EnsureHelperComponents(true);
         interactionController.SetPreviewZoomDistance(distance);
+    }
+
+    public void SetSceneProfile(VolumePreviewSceneProfile profile)
+    {
+        templateProfile = profile;
+        MigrateLegacySettingsIfNeeded();
+
+        if (isActiveAndEnabled)
+        {
+            Apply();
+        }
     }
 
     protected virtual void BeforeApplyRenderProperties(MaterialPropertyBlock propertyBlock, Material activeMaterial)
@@ -194,19 +228,28 @@ public class VolumeMaterialPreviewController : MonoBehaviour
             return;
         }
 
+        var profile = templateProfile;
+        if (profile != null && profile.PreviewModeCount > 0)
+        {
+            previewMaterials = profile.GetPreviewMaterials();
+        }
+
         interactionController.AdoptLegacySettings(
             previewCamera,
-            allowMouseRotate,
-            mouseButton,
-            rotateSpeedX,
-            rotateSpeedY,
-            pitchLimits,
-            rotationSmoothTime,
-            rotationInertiaDamping,
-            allowScrollZoom,
-            zoomSpeed,
-            zoomDistanceLimits,
-            applyTransformRotation);
+            profile != null ? profile.AllowMouseRotate : allowMouseRotate,
+            profile != null ? profile.MouseButton : mouseButton,
+            profile != null ? profile.RotateSpeedX : rotateSpeedX,
+            profile != null ? profile.RotateSpeedY : rotateSpeedY,
+            profile != null ? profile.PitchLimits : pitchLimits,
+            profile != null ? profile.RotationSmoothTime : rotationSmoothTime,
+            profile != null ? profile.RotationInertiaDamping : rotationInertiaDamping,
+            profile != null ? profile.AllowScrollZoom : allowScrollZoom,
+            profile != null ? profile.ZoomSpeed : zoomSpeed,
+            profile != null ? profile.ZoomDistanceLimits : zoomDistanceLimits,
+            profile != null ? profile.ApplyTransformRotation : applyTransformRotation);
+
+        allowRuntimeShapeSwitch = profile != null ? profile.AllowRuntimeShapeSwitch : allowRuntimeShapeSwitch;
+        cycleShapeKey = profile != null ? profile.CycleShapeKey : cycleShapeKey;
 
         renderController.AdoptLegacySettings(
             sourceLight,
@@ -271,6 +314,12 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     private Material ResolveActiveMaterial()
     {
+        if (templateProfile != null && templateProfile.PreviewModeCount > 0)
+        {
+            currentMaterialIndex = Mathf.Clamp(currentMaterialIndex, 0, templateProfile.PreviewModeCount - 1);
+            return templateProfile.GetPreviewMaterial(currentMaterialIndex);
+        }
+
         if (previewMaterials == null || previewMaterials.Length == 0)
         {
             return null;
@@ -290,6 +339,8 @@ public class VolumeMaterialPreviewController : MonoBehaviour
             return;
         }
 
+        carrierMode = MapPreviewShapeToCarrierMode(previewShape);
+        renderController.SetCarrierMode(carrierMode);
         var propertyBlock = renderController.PreparePropertyBlock(
             activeMaterial,
             transform,
@@ -300,5 +351,16 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
         BeforeApplyRenderProperties(propertyBlock, activeMaterial);
         renderController.ApplyPreparedPropertyBlock(activeMaterial, propertyBlock);
+    }
+
+    private static CarrierMode MapPreviewShapeToCarrierMode(PreviewShape shape)
+    {
+        return shape switch
+        {
+            PreviewShape.Sphere => CarrierMode.Sphere,
+            PreviewShape.Box => CarrierMode.Cube,
+            PreviewShape.Capsule => CarrierMode.Capsule,
+            _ => CarrierMode.Cube
+        };
     }
 }

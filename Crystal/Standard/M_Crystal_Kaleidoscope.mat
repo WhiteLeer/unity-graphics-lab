@@ -24,7 +24,7 @@ Material:
     m_Floats:
     - _STDeltaTime: 0
     - _STFrame: 0
-    - _STTime: 0
+    - _STTime: 9.39
     m_Colors:
     - _STMouse: {r: 0, g: 0, b: 0, a: 0}
     - _STResolution: {r: 512, g: 288, b: 0.001953125, a: 0.0034722222}

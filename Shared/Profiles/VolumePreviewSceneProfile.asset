@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 517a295c59f380f4482dff83ed9d0a49, type: 3}
+  m_Name: VolumePreviewSceneProfile
+  m_EditorClassIdentifier: 
+  allowMouseRotate: 1
+  mouseButton: 0
+  rotateSpeedX: 1.05
+  rotateSpeedY: 0.75
+  pitchLimits: {x: -65, y: 65}
+  rotationSmoothTime: 0.12
+  rotationInertiaDamping: 4.5
+  allowScrollZoom: 1
+  zoomSpeed: 2.4
+  zoomDistanceLimits: {x: 1.2, y: 4.5}
+  applyTransformRotation: 1
+  allowRuntimeShapeSwitch: 1
+  cycleShapeKey: 0
+  preferSubstanceAtlas: 1
+  densityAtlas: {fileID: 0}
+  atlasColumns: 8
+  atlasRows: 8
+  textureResolution: 64
+  regenerateTexture: 0

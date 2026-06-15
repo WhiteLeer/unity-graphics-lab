@@ -10,8 +10,8 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     // 1. This class owns only currentMode and per-mode zoom persistence.
     // 2. It may activate/deactivate roots, apply camera presets, switch preview material index,
     //    and restore zoom for the selected preview mode.
-    // 3. It must not own preview shape, shader property values, or per-material authoring data.
-    // 4. If mode switching seems to need shape changes, route that decision through the preview controller API
+    // 3. It must not own preview mesh, shader property values, or per-material authoring data.
+    // 4. If preview mesh changes are needed, route that decision through the preview controller API
     //    instead of writing scene/material state here.
     [System.Serializable]
     private struct CameraModeSettings
@@ -28,7 +28,11 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     [SerializeField] private GameObject previewRoot;
     [SerializeField] private GameObject previewBackdropRoot;
     [SerializeField] private VolumeMaterialPreviewController previewController;
+    [HideInInspector]
+    [SerializeField] private VolumePreviewSceneProfile templateProfile;
+    [HideInInspector]
     [SerializeField] private int previewMaterialCount = 1;
+    [HideInInspector]
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
     [SerializeField] private Camera targetCamera;
     [SerializeField] private CameraModeSettings referenceCamera = new CameraModeSettings
@@ -54,6 +58,8 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
 
     private void OnEnable()
     {
+        ApplyTemplateProfileDefaults();
+        SyncPreviewMaterialCount();
         EnsurePreviewZoomStorage();
         currentMode = ClampMode(currentMode);
         lastAppliedMode = int.MinValue;
@@ -108,6 +114,8 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
 
     private void OnValidate()
     {
+        ApplyTemplateProfileDefaults();
+        SyncPreviewMaterialCount();
         previewMaterialCount = Mathf.Max(1, previewMaterialCount);
         EnsurePreviewZoomStorage();
         currentMode = ClampMode(currentMode);
@@ -205,6 +213,45 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     private int ClampMode(int mode)
     {
         return Mathf.Clamp(mode, -1, Mathf.Max(0, previewMaterialCount - 1));
+    }
+
+    private void ApplyTemplateProfileDefaults()
+    {
+        if (templateProfile == null)
+        {
+            return;
+        }
+
+        toggleKey = templateProfile.ToggleKey;
+    }
+
+    private void SyncPreviewMaterialCount()
+    {
+        if (templateProfile != null && templateProfile.PreviewModeCount > 0)
+        {
+            previewMaterialCount = Mathf.Max(1, templateProfile.PreviewModeCount);
+            return;
+        }
+
+        if (previewController == null)
+        {
+            return;
+        }
+
+        previewMaterialCount = Mathf.Max(1, previewController.GetPreviewMaterialCount());
+    }
+
+    public void SetSceneProfile(VolumePreviewSceneProfile profile)
+    {
+        templateProfile = profile;
+        ApplyTemplateProfileDefaults();
+        SyncPreviewMaterialCount();
+        EnsurePreviewZoomStorage();
+
+        if (isActiveAndEnabled)
+        {
+            ApplyMode();
+        }
     }
 
     private void ApplyCameraMode(CameraModeSettings settings)

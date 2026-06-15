@@ -17,8 +17,8 @@ Shader "MaterialFX/Crystal/Kaleidoscope"
             Name "ForwardUnlit"
             Tags { "LightMode"="UniversalForward" }
             Cull Off
-            ZWrite Off
-            ZTest Always
+            ZWrite On
+            ZTest LEqual
 
             HLSLPROGRAM
             #pragma target 4.0

@@ -2,18 +2,14 @@ using System;
 using UnityEngine;
 
 [ExecuteAlways]
-[RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 public class VolumePreviewRenderController : MonoBehaviour
 {
     // Render/binding-only component.
-    // Owns carrier mesh, density texture generation, light binding, and shader property block application.
-    // It must not own preview mode, material index selection, or zoom persistence.
-    // Effects may subclass this when they need custom resource generation or shader binding behavior.
+    // Owns density texture generation, light binding, carrier activation, and shader property block application.
+    // Carrier meshes must be created in the scene ahead of time.
 
     private const string DefaultAtlasResourcePath = "Generated/JadeVolume_PerlinDensityAtlas";
-    private static Mesh quadCarrierPreviewMesh;
-    private static Mesh cubeCarrierPreviewMesh;
     private static readonly int VolumeTexId = Shader.PropertyToID("_DensityTex");
     private static readonly int LightPositionId = Shader.PropertyToID("_VolumeLightPositionWS");
     private static readonly int LightColorId = Shader.PropertyToID("_VolumeLightColor");
@@ -35,16 +31,18 @@ public class VolumePreviewRenderController : MonoBehaviour
     [SerializeField] private bool regenerateTexture;
 
     [Header("Carrier")]
-    [SerializeField] private VolumeMaterialPreviewController.CarrierMode carrierMode = VolumeMaterialPreviewController.CarrierMode.Quad;
-    [SerializeField] private float radius = 0.34f;
-    [SerializeField] private float edgeSoftness = 0.18f;
-    [SerializeField] private float noiseStrength = 0.22f;
-    [SerializeField] private float noiseFrequency = 5.0f;
+    [SerializeField] private VolumeMaterialPreviewController.CarrierMode carrierMode = VolumeMaterialPreviewController.CarrierMode.Cube;
+    [SerializeField] private GameObject legacyQuadCarrierObject;
+    [SerializeField] private GameObject sphereCarrierObject;
+    [SerializeField] private GameObject cubeCarrierObject;
+    [SerializeField] private GameObject capsuleCarrierObject;
 
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
 
-    private MeshFilter meshFilter = null!;
-    private MeshRenderer meshRenderer = null!;
+    private MeshRenderer rootRenderer = null!;
+    private MeshRenderer sphereCarrierRenderer = null!;
+    private MeshRenderer cubeCarrierRenderer = null!;
+    private MeshRenderer capsuleCarrierRenderer = null!;
     private MaterialPropertyBlock propertyBlock = null!;
     private Texture3D runtimeTexture;
     private Texture2D lastAtlasSource;
@@ -77,11 +75,13 @@ public class VolumePreviewRenderController : MonoBehaviour
         textureResolution = legacyTextureResolution;
         regenerateTexture = legacyRegenerateTexture;
         carrierMode = legacyCarrierMode;
-        radius = legacyRadius;
-        edgeSoftness = legacyEdgeSoftness;
-        noiseStrength = legacyNoiseStrength;
-        noiseFrequency = legacyNoiseFrequency;
         adoptedLegacySettings = true;
+    }
+
+    public void SetCarrierMode(VolumeMaterialPreviewController.CarrierMode mode)
+    {
+        carrierMode = mode;
+        EnsureCarrierSelection();
     }
 
     public void TickResources(bool force)
@@ -99,7 +99,7 @@ public class VolumePreviewRenderController : MonoBehaviour
         float previewYaw)
     {
         Initialize();
-        EnsureCarrierMesh();
+        EnsureCarrierSelection();
 
         propertyBlock.Clear();
         propertyBlock.SetTexture(VolumeTexId, runtimeTexture);
@@ -130,24 +130,38 @@ public class VolumePreviewRenderController : MonoBehaviour
     public void ApplyPreparedPropertyBlock(Material activeMaterial, MaterialPropertyBlock preparedPropertyBlock)
     {
         Initialize();
-        if (meshRenderer.sharedMaterial != activeMaterial)
+        var activeRenderer = ResolveActiveCarrierRenderer();
+        if (activeRenderer == null)
         {
-            meshRenderer.sharedMaterial = activeMaterial;
+            activeRenderer = rootRenderer;
         }
 
-        meshRenderer.SetPropertyBlock(preparedPropertyBlock);
+        if (activeRenderer != null && activeRenderer.sharedMaterial != activeMaterial)
+        {
+            activeRenderer.sharedMaterial = activeMaterial;
+        }
+
+        if (activeRenderer != null)
+        {
+            activeRenderer.SetPropertyBlock(preparedPropertyBlock);
+        }
     }
 
     private void Initialize()
     {
-        if (meshFilter == null)
+        if (rootRenderer == null)
         {
-            meshFilter = GetComponent<MeshFilter>();
+            rootRenderer = GetComponent<MeshRenderer>();
         }
 
-        if (meshRenderer == null)
+        if (cubeCarrierRenderer == null && cubeCarrierObject != null)
         {
-            meshRenderer = GetComponent<MeshRenderer>();
+            cubeCarrierRenderer = cubeCarrierObject.GetComponent<MeshRenderer>();
+        }
+
+        if (capsuleCarrierRenderer == null && capsuleCarrierObject != null)
+        {
+            capsuleCarrierRenderer = capsuleCarrierObject.GetComponent<MeshRenderer>();
         }
 
         if (propertyBlock == null)
@@ -156,117 +170,93 @@ public class VolumePreviewRenderController : MonoBehaviour
         }
     }
 
-    private void EnsureCarrierMesh()
+    private void EnsureCarrierSelection()
     {
-        var carrierMesh = GetCarrierPreviewMesh(carrierMode);
-        if (carrierMesh != null && meshFilter.sharedMesh != carrierMesh)
+        if (sphereCarrierObject == null)
         {
-            meshFilter.sharedMesh = carrierMesh;
+            sphereCarrierObject = transform.Find("PreviewCarrier_Sphere")?.gameObject;
+        }
+
+        if (legacyQuadCarrierObject == null)
+        {
+            legacyQuadCarrierObject = transform.Find("PreviewCarrier_Quad")?.gameObject;
+        }
+
+        if (cubeCarrierObject == null)
+        {
+            cubeCarrierObject = transform.Find("PreviewCarrier_Cube")?.gameObject;
+        }
+
+        if (capsuleCarrierObject == null)
+        {
+            capsuleCarrierObject = transform.Find("PreviewCarrier_Capsule")?.gameObject;
+        }
+
+        if (sphereCarrierRenderer == null && sphereCarrierObject != null)
+        {
+            sphereCarrierRenderer = sphereCarrierObject.GetComponent<MeshRenderer>();
+        }
+
+        if (cubeCarrierRenderer == null && cubeCarrierObject != null)
+        {
+            cubeCarrierRenderer = cubeCarrierObject.GetComponent<MeshRenderer>();
+        }
+
+        if (capsuleCarrierRenderer == null && capsuleCarrierObject != null)
+        {
+            capsuleCarrierRenderer = capsuleCarrierObject.GetComponent<MeshRenderer>();
+        }
+
+        var activeCarrierObject = ResolveActiveCarrierObject();
+        SetCarrierActive(legacyQuadCarrierObject, false);
+        SetCarrierActive(sphereCarrierObject, activeCarrierObject == sphereCarrierObject);
+        SetCarrierActive(cubeCarrierObject, activeCarrierObject == cubeCarrierObject);
+        SetCarrierActive(capsuleCarrierObject, activeCarrierObject == capsuleCarrierObject);
+
+        if (rootRenderer != null)
+        {
+            rootRenderer.enabled = sphereCarrierObject == null && cubeCarrierObject == null && capsuleCarrierObject == null;
         }
     }
 
-    private static Mesh GetCarrierPreviewMesh(VolumeMaterialPreviewController.CarrierMode mode)
+    private MeshRenderer ResolveActiveCarrierRenderer()
     {
-        return mode == VolumeMaterialPreviewController.CarrierMode.Cube ? GetCubeCarrierPreviewMesh() : GetQuadCarrierPreviewMesh();
+        return ResolveCarrierRenderer(carrierMode);
     }
 
-    private static Mesh GetQuadCarrierPreviewMesh()
+    private GameObject ResolveActiveCarrierObject()
     {
-        if (quadCarrierPreviewMesh != null)
-        {
-            return quadCarrierPreviewMesh;
-        }
-
-        quadCarrierPreviewMesh = new Mesh
-        {
-            name = "SharedPreview_QuadCarrier",
-            hideFlags = HideFlags.HideAndDontSave
-        };
-
-        quadCarrierPreviewMesh.SetVertices(new[]
-        {
-            new Vector3(-0.5f, -0.5f, 0.0f),
-            new Vector3(0.5f, -0.5f, 0.0f),
-            new Vector3(0.5f, 0.5f, 0.0f),
-            new Vector3(-0.5f, 0.5f, 0.0f)
-        });
-        quadCarrierPreviewMesh.SetUVs(0, new[]
-        {
-            new Vector2(0.0f, 0.0f),
-            new Vector2(1.0f, 0.0f),
-            new Vector2(1.0f, 1.0f),
-            new Vector2(0.0f, 1.0f)
-        });
-        quadCarrierPreviewMesh.SetNormals(new[]
-        {
-            Vector3.forward,
-            Vector3.forward,
-            Vector3.forward,
-            Vector3.forward
-        });
-        quadCarrierPreviewMesh.SetTriangles(new[] { 0, 1, 2, 0, 2, 3 }, 0, true);
-        quadCarrierPreviewMesh.RecalculateBounds();
-        return quadCarrierPreviewMesh;
+        return ResolveCarrierObject(carrierMode);
     }
 
-    private static Mesh GetCubeCarrierPreviewMesh()
+    private MeshRenderer ResolveCarrierRenderer(VolumeMaterialPreviewController.CarrierMode mode)
     {
-        if (cubeCarrierPreviewMesh != null)
+        return mode switch
         {
-            return cubeCarrierPreviewMesh;
+            VolumeMaterialPreviewController.CarrierMode.Sphere => sphereCarrierRenderer,
+            VolumeMaterialPreviewController.CarrierMode.Cube => cubeCarrierRenderer,
+            VolumeMaterialPreviewController.CarrierMode.Capsule => capsuleCarrierRenderer,
+            _ => cubeCarrierRenderer
+        };
+    }
+
+    private GameObject ResolveCarrierObject(VolumeMaterialPreviewController.CarrierMode mode)
+    {
+        return mode switch
+        {
+            VolumeMaterialPreviewController.CarrierMode.Sphere => sphereCarrierObject,
+            VolumeMaterialPreviewController.CarrierMode.Cube => cubeCarrierObject,
+            VolumeMaterialPreviewController.CarrierMode.Capsule => capsuleCarrierObject,
+            _ => cubeCarrierObject
+        };
+    }
+
+    private static void SetCarrierActive(GameObject carrierObject, bool active)
+    {
+        if (carrierObject != null)
+        {
+            carrierObject.SetActive(active);
         }
-
-        var vertices = new[]
-        {
-            new Vector3(-0.5f, -0.5f, 0.5f),  new Vector3(0.5f, -0.5f, 0.5f),   new Vector3(0.5f, 0.5f, 0.5f),    new Vector3(-0.5f, 0.5f, 0.5f),
-            new Vector3(0.5f, -0.5f, -0.5f),  new Vector3(-0.5f, -0.5f, -0.5f), new Vector3(-0.5f, 0.5f, -0.5f),  new Vector3(0.5f, 0.5f, -0.5f),
-            new Vector3(-0.5f, -0.5f, -0.5f), new Vector3(-0.5f, -0.5f, 0.5f),  new Vector3(-0.5f, 0.5f, 0.5f),   new Vector3(-0.5f, 0.5f, -0.5f),
-            new Vector3(0.5f, -0.5f, 0.5f),   new Vector3(0.5f, -0.5f, -0.5f),  new Vector3(0.5f, 0.5f, -0.5f),   new Vector3(0.5f, 0.5f, 0.5f),
-            new Vector3(-0.5f, 0.5f, 0.5f),   new Vector3(0.5f, 0.5f, 0.5f),    new Vector3(0.5f, 0.5f, -0.5f),   new Vector3(-0.5f, 0.5f, -0.5f),
-            new Vector3(-0.5f, -0.5f, -0.5f), new Vector3(0.5f, -0.5f, -0.5f),  new Vector3(0.5f, -0.5f, 0.5f),   new Vector3(-0.5f, -0.5f, 0.5f)
-        };
-
-        var normals = new[]
-        {
-            Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward,
-            Vector3.back, Vector3.back, Vector3.back, Vector3.back,
-            Vector3.left, Vector3.left, Vector3.left, Vector3.left,
-            Vector3.right, Vector3.right, Vector3.right, Vector3.right,
-            Vector3.up, Vector3.up, Vector3.up, Vector3.up,
-            Vector3.down, Vector3.down, Vector3.down, Vector3.down
-        };
-
-        var uv = new[]
-        {
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)
-        };
-
-        var triangles = new[]
-        {
-            0, 1, 2, 0, 2, 3,
-            4, 5, 6, 4, 6, 7,
-            8, 9, 10, 8, 10, 11,
-            12, 13, 14, 12, 14, 15,
-            16, 17, 18, 16, 18, 19,
-            20, 21, 22, 20, 22, 23
-        };
-
-        cubeCarrierPreviewMesh = new Mesh
-        {
-            name = "SharedPreview_CubeCarrier",
-            hideFlags = HideFlags.HideAndDontSave
-        };
-        cubeCarrierPreviewMesh.SetVertices(vertices);
-        cubeCarrierPreviewMesh.SetNormals(normals);
-        cubeCarrierPreviewMesh.SetUVs(0, uv);
-        cubeCarrierPreviewMesh.SetTriangles(triangles, 0, true);
-        cubeCarrierPreviewMesh.RecalculateBounds();
-        return cubeCarrierPreviewMesh;
     }
 
     private void RebuildTextureIfNeeded(bool force)
@@ -386,14 +376,14 @@ public class VolumePreviewRenderController : MonoBehaviour
                 {
                     var px = Mathf.Lerp(-0.5f, 0.5f, x / (float)(size - 1));
                     var distance = new Vector3(px, py, pz).magnitude;
-                    var radial = 1f - Mathf.InverseLerp(radius, radius + edgeSoftness, distance);
+                    var radial = 1f - Mathf.InverseLerp(0.34f, 0.34f + 0.18f, distance);
 
-                    var noiseA = Mathf.PerlinNoise((px + 0.5f) * noiseFrequency, (py + 0.5f) * noiseFrequency);
-                    var noiseB = Mathf.PerlinNoise((py + 0.5f) * noiseFrequency * 1.37f, (pz + 0.5f) * noiseFrequency * 1.11f);
-                    var noiseC = Mathf.PerlinNoise((px + 0.5f) * noiseFrequency * 0.89f, (pz + 0.5f) * noiseFrequency * 1.63f);
+                    var noiseA = Mathf.PerlinNoise((px + 0.5f) * 5.0f, (py + 0.5f) * 5.0f);
+                    var noiseB = Mathf.PerlinNoise((py + 0.5f) * 5.0f * 1.37f, (pz + 0.5f) * 5.0f * 1.11f);
+                    var noiseC = Mathf.PerlinNoise((px + 0.5f) * 5.0f * 0.89f, (pz + 0.5f) * 5.0f * 1.63f);
                     var combinedNoise = (noiseA + noiseB + noiseC) / 3f;
 
-                    var density = Mathf.Clamp01(radial - noiseStrength * (combinedNoise - 0.5f));
+                    var density = Mathf.Clamp01(radial - 0.22f * (combinedNoise - 0.5f));
                     colors[index++] = new Color(density, density, density, density);
                 }
             }

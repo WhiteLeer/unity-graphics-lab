@@ -1,0 +1,19 @@
+{
+    "name": "UnityGraphicsLab.Shared.Editor",
+    "rootNamespace": "UnityGraphicsLab.Shared",
+    "references": [
+        "UnityGraphicsLab.Runtime",
+        "Unity.RenderPipelines.Universal.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
