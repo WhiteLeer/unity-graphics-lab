@@ -11,11 +11,17 @@ Shader "MaterialFX/Crystal/Kaleidoscope"
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" "Queue"="Geometry" }
+        Tags
+        {
+            "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" "Queue"="Geometry"
+        }
         Pass
         {
             Name "ForwardUnlit"
-            Tags { "LightMode"="UniversalForward" }
+            Tags
+            {
+                "LightMode"="UniversalForward"
+            }
             Cull Off
             ZWrite On
             ZTest LEqual
@@ -36,8 +42,18 @@ Shader "MaterialFX/Crystal/Kaleidoscope"
 
             #define DTR 0.01745329
 
-            struct Attributes { float4 positionOS:POSITION; float2 uv:TEXCOORD0; };
-            struct Varyings { float4 positionHCS:SV_POSITION; float2 uv:TEXCOORD0; float2 fragCoord:TEXCOORD1; };
+            struct Attributes
+            {
+                float4 positionOS:POSITION;
+                float2 uv:TEXCOORD0;
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS:SV_POSITION;
+                float2 uv:TEXCOORD0;
+                float2 fragCoord:TEXCOORD1;
+            };
 
             struct CrystalState
             {
@@ -107,8 +123,8 @@ Shader "MaterialFX/Crystal/Kaleidoscope"
 
             float3 SanitizeColor(float3 c)
             {
-                c = any(isnan(c)) ? 0.0.xxx : c;
-                c = any(isinf(c)) ? 0.0.xxx : c;
+                c = any(isnan(c)) ? 0.0 : c;
+                c = any(isinf(c)) ? 0.0 : c;
                 return max(c, 0.0);
             }
 
@@ -271,6 +287,27 @@ Shader "MaterialFX/Crystal/Kaleidoscope"
             {
                 return RenderCrystal(i.fragCoord);
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+            ZWrite On
+            ColorMask R
+            HLSLPROGRAM
+            #pragma target 2.0
+            #pragma vertex DepthOnlyVertex
+            #pragma fragment DepthOnlyFragment
+            #pragma shader_feature_local _ALPHATEST_ON
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
+            #include "Assets/unity-shadertoy-validation/Common/Shaders/ShadertoyDepthOnlyPass.hlsl"
             ENDHLSL
         }
     }

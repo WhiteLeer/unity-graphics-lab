@@ -7,8 +7,10 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_JadeVolume_Object_SimpleJade
-  m_Shader: {fileID: 4800000, guid: 1893fa21ca0a4716b7edd56c21cdfa72, type: 3}
+  m_Name: M_JadeVolume_Object
+  m_Shader: {fileID: 4800000, guid: b57e5a4f43df4a5d83cda88903a6378d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -17,33 +19,22 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs:
-    - _DensityTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+    m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _FresnelPower: 0.73
-    - _HitEpsilon: 0.001
-    - _MaxDistance: 2
-    - _NoiseAmount: 0.006
-    - _NoiseFrequency: 8
-    - _NormalStep: 0.01
-    - _SSSAmbient: 1
-    - _SSSDistortion: 2
-    - _SSSPower: 2
-    - _SSSScale: 1.45
-    - _ShapeBlend: 0.04
-    - _ShapeMode: 0.65
-    - _SpecularMultiplier: 0
-    - _SpecularRoughness: 0.02
-    - _SurfaceOffset: 0
-    - _ThicknessSampleCount: 32
-    - _ThicknessSampleDepth: 2
-    - _TraceSteps: 128
+    - _FresnelPower: 2.75
+    - _ScatterBlend: 0.35
+    - _ScatterBoost: 8
+    - _ScatterCurve: 0.2
+    - _ScatterDistance: 4
+    - _ScatterIor: 2
+    - _ScatterStep: 0.02
+    - _ScatterStrength: 8
+    - _SpecularMultiplier: 1
+    - _SpecularRoughness: 0.075
     m_Colors:
     - _AmbientTint: {r: 0.08, g: 0.18, b: 0.04, a: 1}
     - _BaseColor: {r: 0.72, g: 0.86, b: 0.4, a: 1}

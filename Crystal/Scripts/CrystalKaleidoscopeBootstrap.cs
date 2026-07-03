@@ -13,7 +13,7 @@ using UnityEditor;
 public sealed class CrystalKaleidoscopeBootstrap : MonoBehaviour
 {
     [SerializeField] private Material sourceMaterial;
-    [SerializeField] private string quadObjectName = "Crystal_Quad";
+    [SerializeField] private string quadObjectName = "Preview_Crystal";
 
     private Material runtimeMaterial;
     private Camera runtimeCamera;

@@ -35,7 +35,10 @@ Shader "SurfaceLab/Crystal/VolumeObject"
         Pass
         {
             Name "CrystalVolumeObject"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
             Cull Off
             ZWrite On
 
@@ -487,8 +490,8 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 p = RotatePreviewToVolume(p);
                 float outerShape = CrystalShapeSdfLocal(p);
                 float outerShell = outerShape > 0.0
-                    ? (outerShape - kCrystalSurfaceOffset)
-                    : (abs(outerShape - kCrystalSurfaceOffset) - 0.0015);
+                                       ? (outerShape - kCrystalSurfaceOffset)
+                                       : (abs(outerShape - kCrystalSurfaceOffset) - 0.0015);
 
                 float interiorField = PreviewCrystalFieldLocal(p, crystalGlow);
                 float interiorMask = smoothstep(-0.22, -0.03, -outerShape);
@@ -592,10 +595,19 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float3 kyLocal = RotatePreviewToVolume(ky);
                 float3 kzLocal = RotatePreviewToVolume(kz);
                 float3 ignoreGlow = 0.0;
-                float center = includeInteriorShells ? CrystalInteriorFacetValueLocal(cpLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(cpLocal);
-                float dx = includeInteriorShells ? CrystalInteriorFacetValueLocal(kxLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(kxLocal);
-                float dy = includeInteriorShells ? CrystalInteriorFacetValueLocal(kyLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(kyLocal);
-                float dz = includeInteriorShells ? CrystalInteriorFacetValueLocal(kzLocal, ignoreGlow) : CrystalOuterShellDistanceLocal(kzLocal);
+                float center = includeInteriorShells
+                                                                         ? CrystalInteriorFacetValueLocal(
+                                                                             cpLocal, ignoreGlow)
+                                                                         : CrystalOuterShellDistanceLocal(cpLocal);
+                float dx = includeInteriorShells
+                    ? CrystalInteriorFacetValueLocal(kxLocal, ignoreGlow)
+                    : CrystalOuterShellDistanceLocal(kxLocal);
+                float dy = includeInteriorShells
+                                         ? CrystalInteriorFacetValueLocal(kyLocal, ignoreGlow)
+                                         : CrystalOuterShellDistanceLocal(kyLocal);
+                float dz = includeInteriorShells
+         ? CrystalInteriorFacetValueLocal(kzLocal, ignoreGlow)
+         : CrystalOuterShellDistanceLocal(kzLocal);
                 float3 outerNormal = SafeNormalize3(center - float3(dx, dy, dz));
                 st.cn = outerNormal;
             }
@@ -625,7 +637,8 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float3 fr = frPow * lerp(st.cc, lerp(_EdgeTint.rgb, float3(1.0, 1.0, 1.0), 0.08), 0.40);
                 float sp = pow(saturate(1.0 - length(cross(st.cr, st.cn * lRef))), 1.2) * (_SpecularIntensity * 0.18);
                 float3 interiorGlow = st.gl * (0.40 + glowHue * 0.18) * (_GlowStrength * lerp(0.28, 0.40, shardColor));
-                st.cc = lerp(st.oc * (crystalTint * (dfRef * 0.50 + 0.06) + fr + st.ss) + fr + sp + interiorGlow, crystalTint, st.vb.x * 0.10);
+                st.cc = lerp(st.oc * (crystalTint * (dfRef * 0.50 + 0.06) + fr + st.ss) + fr + sp + interiorGlow,
+           crystalTint, st.vb.x * 0.10);
             }
 
             float4 Frag(Varyings input) : SV_Target
@@ -706,6 +719,27 @@ Shader "SurfaceLab/Crystal/VolumeObject"
 
                 return float4(SanitizeColor(st.fc.rgb / max(st.fc.a, 1e-4)), 1.0);
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+            ZWrite On
+            ColorMask R
+            HLSLPROGRAM
+            #pragma target 2.0
+            #pragma vertex DepthOnlyVertex
+            #pragma fragment DepthOnlyFragment
+            #pragma shader_feature_local _ALPHATEST_ON
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
+            #include "Assets/unity-shadertoy-validation/Common/Shaders/ShadertoyDepthOnlyPass.hlsl"
             ENDHLSL
         }
     }

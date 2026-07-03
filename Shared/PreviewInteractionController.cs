@@ -22,6 +22,7 @@ public class PreviewInteractionController : MonoBehaviour
     [SerializeField] private bool applyTransformRotation = true;
 
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
+    [SerializeField, HideInInspector] private bool interactionEnabled = true;
 
     private float pitch = 12f;
     private float yaw = -24f;
@@ -35,6 +36,18 @@ public class PreviewInteractionController : MonoBehaviour
 
     public float Pitch => pitch;
     public float Yaw => yaw;
+
+    public void SetInteractionEnabled(bool enabled)
+    {
+        interactionEnabled = enabled;
+
+        if (!interactionEnabled)
+        {
+            pitchVelocity = 0.0f;
+            yawVelocity = 0.0f;
+            zoomVelocity = 0.0f;
+        }
+    }
 
     public void AdoptLegacySettings(
         Camera legacyPreviewCamera,
@@ -100,7 +113,7 @@ public class PreviewInteractionController : MonoBehaviour
         zoomVelocity = 0.0f;
 
         var cam = ResolvePreviewCamera();
-        if (cam == null || cam.orthographic)
+        if (!interactionEnabled || cam == null || cam.orthographic)
         {
             return;
         }
@@ -113,6 +126,11 @@ public class PreviewInteractionController : MonoBehaviour
     private void HandleMouseRotate(Transform previewTransform)
     {
         if (!Application.isPlaying)
+        {
+            return;
+        }
+
+        if (!interactionEnabled)
         {
             return;
         }
@@ -149,7 +167,7 @@ public class PreviewInteractionController : MonoBehaviour
 
     private void HandleScrollZoom()
     {
-        if (!allowScrollZoom)
+        if (!interactionEnabled || !allowScrollZoom)
         {
             return;
         }

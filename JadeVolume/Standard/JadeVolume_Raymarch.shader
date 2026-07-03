@@ -53,7 +53,10 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
         Pass
         {
             Name "JadeVolumeRaymarch"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
             Cull Back
             ZWrite On
 
@@ -171,9 +174,9 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
                     + u.z * u.x * (ga - gb - ge + gf)
                     + (-ga + gb + gc - gd + ge - gf - gg + gh) * u.x * u.y * u.z
                     + du * (float3(vb, vc, ve) - va
-                    + u.yzx * float3(va - vb - vc + vd, va - vc - ve + vg, va - vb - ve + vf)
-                    + u.zxy * float3(va - vb - ve + vf, va - vb - vc + vd, va - vc - ve + vg)
-                    + u.yzx * u.zxy * (-va + vb + vc - vd + ve - vf - vg + vh));
+                        + u.yzx * float3(va - vb - vc + vd, va - vc - ve + vg, va - vb - ve + vf)
+                        + u.zxy * float3(va - vb - ve + vf, va - vb - vc + vd, va - vc - ve + vg)
+                        + u.yzx * u.zxy * (-va + vb + vc - vd + ve - vf - vg + vh));
 
                 return float4(value, deriv);
             }
@@ -440,7 +443,8 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
                 float2 u2 = -1.0 + 2.0 * uv;
                 u2.x *= _ScreenParams.x / _ScreenParams.y;
 
-                float3 d = lerp(normalize(mul(float3(u2, 20.0), rot)), normalize(mul(normalize(float3(u2, 20.0)), ro2)), pow(lr, 1.11));
+                float3 d = lerp(normalize(mul(float3(u2, 20.0), rot)), normalize(mul(normalize(float3(u2, 20.0)), ro2)),
+                                            pow(lr, 1.11));
                 d = normalize(d);
 
                 float3 hit = OriginalIntersect(c + 145.0 * d, d);
@@ -453,6 +457,27 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
 
                 return float4(max(originalColor * (0.99 + 0.02 * n), 0.0), 1.0);
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+            ZWrite On
+            ColorMask R
+            HLSLPROGRAM
+            #pragma target 2.0
+            #pragma vertex DepthOnlyVertex
+            #pragma fragment DepthOnlyFragment
+            #pragma shader_feature_local _ALPHATEST_ON
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
+            #include "Assets/unity-shadertoy-validation/Common/Shaders/ShadertoyDepthOnlyPass.hlsl"
             ENDHLSL
         }
     }

@@ -6,27 +6,12 @@ using UnityEditor;
 [ExecuteAlways]
 public sealed class ReferencePreviewToggleController : MonoBehaviour
 {
-    // Ownership contract for reference/preview mode switching:
-    // 1. This class owns only currentMode and per-mode zoom persistence.
-    // 2. It may activate/deactivate roots, apply camera presets, switch preview material index,
-    //    and restore zoom for the selected preview mode.
-    // 3. It must not own preview mesh, shader property values, or per-material authoring data.
-    // 4. If preview mesh changes are needed, route that decision through the preview controller API
-    //    instead of writing scene/material state here.
-    [System.Serializable]
-    private struct CameraModeSettings
-    {
-        public bool orthographic;
-        public float orthographicSize;
-        public float fieldOfView;
-        public Vector3 localPosition;
-        public Vector3 localEulerAngles;
-    }
+    // Ownership contract for preview mode switching:
+    // 1. This class owns only currentMode and background color.
+    // 2. It must not own preview mesh, root activation, camera pose, zoom, shader property values, or per-material authoring data.
+    // 3. Camera TRS lives on the scene template / camera object itself.
+    // 4. Scroll zoom is owned by PreviewInteractionController.
 
-    [SerializeField] private Behaviour referenceDriver;
-    [SerializeField] private GameObject referenceRoot;
-    [SerializeField] private GameObject previewRoot;
-    [SerializeField] private GameObject previewBackdropRoot;
     [SerializeField] private VolumeMaterialPreviewController previewController;
     [HideInInspector]
     [SerializeField] private VolumePreviewSceneProfile templateProfile;
@@ -35,32 +20,14 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     [HideInInspector]
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
     [SerializeField] private Camera targetCamera;
-    [SerializeField] private CameraModeSettings referenceCamera = new CameraModeSettings
-    {
-        orthographic = true,
-        orthographicSize = 1.0f,
-        fieldOfView = 60.0f,
-        localPosition = new Vector3(0.0f, 0.0f, -1.0f),
-        localEulerAngles = Vector3.zero
-    };
-    [SerializeField] private CameraModeSettings previewCamera = new CameraModeSettings
-    {
-        orthographic = false,
-        orthographicSize = 1.0f,
-        fieldOfView = 34.0f,
-        localPosition = new Vector3(0.0f, 0.05f, -2.6f),
-        localEulerAngles = new Vector3(0.0f, 0.0f, 0.0f)
-    };
 
-    [SerializeField] private int currentMode = -1;
-    [SerializeField] private float[] previewZoomDistances = new float[0];
+    [SerializeField] private int currentMode = 0;
     private int lastAppliedMode = int.MinValue;
 
     private void OnEnable()
     {
         ApplyTemplateProfileDefaults();
         SyncPreviewMaterialCount();
-        EnsurePreviewZoomStorage();
         currentMode = ClampMode(currentMode);
         lastAppliedMode = int.MinValue;
 #if UNITY_EDITOR
@@ -101,7 +68,7 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
             currentMode++;
             if (currentMode > Mathf.Max(0, previewMaterialCount - 1))
             {
-                currentMode = -1;
+                currentMode = 0;
             }
         }
 
@@ -117,7 +84,6 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
         ApplyTemplateProfileDefaults();
         SyncPreviewMaterialCount();
         previewMaterialCount = Mathf.Max(1, previewMaterialCount);
-        EnsurePreviewZoomStorage();
         currentMode = ClampMode(currentMode);
         if (!isActiveAndEnabled)
         {
@@ -146,47 +112,11 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
 
     private void ApplyMode()
     {
-        var referenceActive = currentMode < 0;
+        ApplySceneBackgroundColor();
 
-        // Persist zoom per preview material mode before we switch away.
-        if (previewController != null && lastAppliedMode >= 0 && lastAppliedMode < previewMaterialCount)
+        if (previewController != null)
         {
-            previewZoomDistances[lastAppliedMode] = previewController.GetPreviewZoomDistance();
-        }
-
-        if (referenceRoot != null)
-        {
-            referenceRoot.SetActive(referenceActive);
-        }
-
-        if (previewRoot != null)
-        {
-            previewRoot.SetActive(!referenceActive);
-        }
-
-        if (previewBackdropRoot != null)
-        {
-            previewBackdropRoot.SetActive(!referenceActive);
-        }
-
-        if (referenceDriver != null)
-        {
-            referenceDriver.enabled = referenceActive;
-        }
-
-        ApplyCameraMode(referenceActive ? referenceCamera : previewCamera);
-
-        if (!referenceActive && previewController != null)
-        {
-            var previewMode = Mathf.Clamp(currentMode, 0, previewMaterialCount - 1);
-            previewController.SetMaterialIndex(previewMode);
-
-            // Restore the preview controller's zoom for this specific mode only.
-            var storedZoom = previewZoomDistances[previewMode];
-            if (storedZoom > 0.0f)
-            {
-                previewController.SetPreviewZoomDistance(storedZoom);
-            }
+            previewController.SetMaterialIndex(currentMode);
         }
 
         lastAppliedMode = currentMode;
@@ -203,7 +133,7 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
         currentMode++;
         if (currentMode > Mathf.Max(0, previewMaterialCount - 1))
         {
-            currentMode = -1;
+            currentMode = 0;
         }
 
         currentMode = ClampMode(currentMode);
@@ -212,7 +142,7 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
 
     private int ClampMode(int mode)
     {
-        return Mathf.Clamp(mode, -1, Mathf.Max(0, previewMaterialCount - 1));
+        return Mathf.Clamp(mode, 0, Mathf.Max(0, previewMaterialCount - 1));
     }
 
     private void ApplyTemplateProfileDefaults()
@@ -246,7 +176,6 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
         templateProfile = profile;
         ApplyTemplateProfileDefaults();
         SyncPreviewMaterialCount();
-        EnsurePreviewZoomStorage();
 
         if (isActiveAndEnabled)
         {
@@ -254,134 +183,34 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
         }
     }
 
-    private void ApplyCameraMode(CameraModeSettings settings)
+    private void ApplySceneBackgroundColor()
     {
-        if (targetCamera == null)
+        if (targetCamera == null || templateProfile == null)
         {
             return;
         }
 
-        var cameraTransform = targetCamera.transform;
-        cameraTransform.localPosition = settings.localPosition;
-        cameraTransform.localEulerAngles = settings.localEulerAngles;
-        targetCamera.orthographic = settings.orthographic;
-        targetCamera.orthographicSize = settings.orthographicSize;
-        targetCamera.fieldOfView = settings.fieldOfView;
-    }
-
-    private void EnsurePreviewZoomStorage()
-    {
-        var desiredCount = Mathf.Max(1, previewMaterialCount);
-        if (previewZoomDistances != null && previewZoomDistances.Length == desiredCount)
-        {
-            InitializeMissingPreviewZooms();
-            return;
-        }
-
-        var resized = new float[desiredCount];
-        if (previewZoomDistances != null)
-        {
-            for (var i = 0; i < Mathf.Min(previewZoomDistances.Length, desiredCount); i++)
-            {
-                resized[i] = previewZoomDistances[i];
-            }
-        }
-
-        previewZoomDistances = resized;
-        InitializeMissingPreviewZooms();
-    }
-
-    private void InitializeMissingPreviewZooms()
-    {
-        var defaultZoom = Mathf.Abs(previewCamera.localPosition.z);
-        if (defaultZoom <= 0.0f)
-        {
-            defaultZoom = 2.6f;
-        }
-
-        for (var i = 0; i < previewZoomDistances.Length; i++)
-        {
-            if (previewZoomDistances[i] <= 0.0f)
-            {
-                previewZoomDistances[i] = defaultZoom * (1.0f + 0.12f * i);
-            }
-        }
+        targetCamera.backgroundColor = templateProfile.CameraBackgroundColor;
     }
 
     private bool IsAppliedStateConsistent()
     {
-        var referenceActive = currentMode < 0;
-
-        if (referenceRoot != null && referenceRoot.activeSelf != referenceActive)
-        {
-            return false;
-        }
-
-        if (previewRoot != null && previewRoot.activeSelf == referenceActive)
-        {
-            return false;
-        }
-
-        if (previewBackdropRoot != null && previewBackdropRoot.activeSelf == referenceActive)
-        {
-            return false;
-        }
-
-        if (referenceDriver != null && referenceDriver.enabled != referenceActive)
-        {
-            return false;
-        }
-
         if (targetCamera != null)
         {
-            if (referenceActive)
+            if (templateProfile != null && targetCamera.backgroundColor != templateProfile.CameraBackgroundColor)
             {
-                if (targetCamera.orthographic != referenceCamera.orthographic)
-                {
-                    return false;
-                }
-
-                if (!Approximately(targetCamera.transform.localPosition, referenceCamera.localPosition))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (targetCamera.orthographic != previewCamera.orthographic)
-                {
-                    return false;
-                }
-
-                if (!Mathf.Approximately(targetCamera.transform.localPosition.x, previewCamera.localPosition.x) ||
-                    !Mathf.Approximately(targetCamera.transform.localPosition.y, previewCamera.localPosition.y))
-                {
-                    return false;
-                }
-
-                if (!Mathf.Approximately(targetCamera.fieldOfView, previewCamera.fieldOfView))
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
-        if (!referenceActive && previewController != null)
+        if (previewController != null)
         {
-            var previewMode = Mathf.Clamp(currentMode, 0, previewMaterialCount - 1);
-            if (previewController.GetMaterialIndex() != previewMode)
+            if (previewController.GetMaterialIndex() != currentMode)
             {
                 return false;
             }
         }
 
         return true;
-    }
-
-    private static bool Approximately(Vector3 a, Vector3 b)
-    {
-        return Mathf.Approximately(a.x, b.x) &&
-               Mathf.Approximately(a.y, b.y) &&
-               Mathf.Approximately(a.z, b.z);
     }
 }

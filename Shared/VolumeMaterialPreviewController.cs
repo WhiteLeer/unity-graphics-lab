@@ -29,8 +29,6 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         JadeLump = 3
     }
 
-    [HideInInspector]
-    [SerializeField] private Material[] previewMaterials = Array.Empty<Material>();
     [SerializeField] private int currentMaterialIndex;
 
     [Header("Shape")]
@@ -102,7 +100,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     private void OnValidate()
     {
-        currentMaterialIndex = Mathf.Clamp(currentMaterialIndex, 0, Mathf.Max(0, previewMaterials.Length - 1));
+        currentMaterialIndex = Mathf.Clamp(currentMaterialIndex, 0, Mathf.Max(0, GetPreviewMaterialCount() - 1));
         EnsureHelperComponents(false);
         MigrateLegacySettingsIfNeeded();
 
@@ -117,7 +115,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     public void SetMaterialIndex(int index)
     {
-        currentMaterialIndex = Mathf.Clamp(index, 0, Mathf.Max(0, previewMaterials.Length - 1));
+        currentMaterialIndex = Mathf.Clamp(index, 0, Mathf.Max(0, GetPreviewMaterialCount() - 1));
         if (SyncShapeFromMaterialOnMaterialChange)
         {
             SyncPreviewShapeFromActiveMaterial();
@@ -159,7 +157,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
             return templateProfile.PreviewModeCount;
         }
 
-        return previewMaterials != null ? previewMaterials.Length : 0;
+        return 0;
     }
 
     public float GetPreviewZoomDistance()
@@ -229,11 +227,6 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         }
 
         var profile = templateProfile;
-        if (profile != null && profile.PreviewModeCount > 0)
-        {
-            previewMaterials = profile.GetPreviewMaterials();
-        }
-
         interactionController.AdoptLegacySettings(
             previewCamera,
             profile != null ? profile.AllowMouseRotate : allowMouseRotate,
@@ -320,13 +313,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
             return templateProfile.GetPreviewMaterial(currentMaterialIndex);
         }
 
-        if (previewMaterials == null || previewMaterials.Length == 0)
-        {
-            return null;
-        }
-
-        currentMaterialIndex = Mathf.Clamp(currentMaterialIndex, 0, previewMaterials.Length - 1);
-        return previewMaterials[currentMaterialIndex];
+        return null;
     }
 
     private void Apply()
@@ -339,8 +326,23 @@ public class VolumeMaterialPreviewController : MonoBehaviour
             return;
         }
 
-        carrierMode = MapPreviewShapeToCarrierMode(previewShape);
-        renderController.SetCarrierMode(carrierMode);
+        var specialMode = templateProfile != null && templateProfile.IsPreviewModeSpecial(currentMaterialIndex);
+        interactionController.SetInteractionEnabled(!specialMode);
+
+        if (specialMode)
+        {
+            ResetFullscreenQuadTransform();
+            renderController.SetFullscreenQuadMode(true);
+        }
+        else
+        {
+            carrierMode = MapPreviewShapeToCarrierMode(previewShape);
+            renderController.SetFullscreenQuadMode(false);
+            renderController.SetCarrierMode(carrierMode);
+        }
+
+        renderController.ApplyPreviewMesh(templateProfile, currentMaterialIndex);
+
         var propertyBlock = renderController.PreparePropertyBlock(
             activeMaterial,
             transform,
@@ -351,6 +353,13 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
         BeforeApplyRenderProperties(propertyBlock, activeMaterial);
         renderController.ApplyPreparedPropertyBlock(activeMaterial, propertyBlock);
+    }
+
+    private void ResetFullscreenQuadTransform()
+    {
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+        transform.localScale = Vector3.one;
     }
 
     private static CarrierMode MapPreviewShapeToCarrierMode(PreviewShape shape)

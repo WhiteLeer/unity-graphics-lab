@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 517a295c59f380f4482dff83ed9d0a49, type: 3}
   m_Name: VolumePreviewSceneProfile
   m_EditorClassIdentifier: 
+  cameraBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
   allowMouseRotate: 1
   mouseButton: 0
   rotateSpeedX: 1.05

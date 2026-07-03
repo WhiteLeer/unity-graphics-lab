@@ -13,11 +13,21 @@ MonoBehaviour:
   m_Name: JadeVolumePreviewSceneProfile
   m_EditorClassIdentifier: 
   toggleKey: 9
+  cameraBackgroundColor: {r: 0.73333335, g: 0.8117648, b: 0.64705884, a: 0}
   previewModes:
-  - displayName: Jade Mode 1
+  - displayName: Preview
+    previewMaterial: {fileID: 2100000, guid: e35200073c755224db43c090fe23e660, type: 2}
+    previewMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    useFullscreenQuad: 1
+  - displayName: Object
     previewMaterial: {fileID: 2100000, guid: 0202e89d1a061f14a848b5212d14f241, type: 2}
-  - displayName: Jade Mode 2
+    previewMesh: {fileID: 2959467708922500008, guid: 4836535774ae082438d69bca35c4a5d9,
+      type: 3}
+    useFullscreenQuad: 0
+  - displayName: SimpleJade
     previewMaterial: {fileID: 2100000, guid: e40cba08cc554d169e93982825ddf087, type: 2}
+    previewMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    useFullscreenQuad: 0
   allowMouseRotate: 1
   mouseButton: 0
   rotateSpeedX: 1.05
@@ -27,7 +37,7 @@ MonoBehaviour:
   rotationInertiaDamping: 4.5
   allowScrollZoom: 1
   zoomSpeed: 2.4
-  zoomDistanceLimits: {x: 1.2, y: 4.5}
+  zoomDistanceLimits: {x: 1.2, y: 12}
   applyTransformRotation: 1
   allowRuntimeShapeSwitch: 1
   cycleShapeKey: 0

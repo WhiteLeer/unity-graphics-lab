@@ -7,9 +7,10 @@ public class VolumePreviewRenderController : MonoBehaviour
 {
     // Render/binding-only component.
     // Owns density texture generation, light binding, carrier activation, and shader property block application.
-    // Carrier meshes must be created in the scene ahead of time.
+    // Carrier GameObjects must be created in the scene ahead of time.
+    // Their mesh assets can be overridden from the scene profile.
 
-    private const string DefaultAtlasResourcePath = "Generated/JadeVolume_PerlinDensityAtlas";
+    private const string DefaultAtlasResourcePath = "JadeVolume_PerlinDensityAtlas";
     private static readonly int VolumeTexId = Shader.PropertyToID("_DensityTex");
     private static readonly int LightPositionId = Shader.PropertyToID("_VolumeLightPositionWS");
     private static readonly int LightColorId = Shader.PropertyToID("_VolumeLightColor");
@@ -32,6 +33,7 @@ public class VolumePreviewRenderController : MonoBehaviour
 
     [Header("Carrier")]
     [SerializeField] private VolumeMaterialPreviewController.CarrierMode carrierMode = VolumeMaterialPreviewController.CarrierMode.Cube;
+    [SerializeField] private bool fullscreenQuadMode;
     [SerializeField] private GameObject legacyQuadCarrierObject;
     [SerializeField] private GameObject sphereCarrierObject;
     [SerializeField] private GameObject cubeCarrierObject;
@@ -40,9 +42,14 @@ public class VolumePreviewRenderController : MonoBehaviour
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
 
     private MeshRenderer rootRenderer = null!;
+    private MeshRenderer legacyQuadCarrierRenderer = null!;
     private MeshRenderer sphereCarrierRenderer = null!;
     private MeshRenderer cubeCarrierRenderer = null!;
     private MeshRenderer capsuleCarrierRenderer = null!;
+    private MeshFilter legacyQuadCarrierFilter = null!;
+    private MeshFilter sphereCarrierFilter = null!;
+    private MeshFilter cubeCarrierFilter = null!;
+    private MeshFilter capsuleCarrierFilter = null!;
     private MaterialPropertyBlock propertyBlock = null!;
     private Texture3D runtimeTexture;
     private Texture2D lastAtlasSource;
@@ -81,7 +88,43 @@ public class VolumePreviewRenderController : MonoBehaviour
     public void SetCarrierMode(VolumeMaterialPreviewController.CarrierMode mode)
     {
         carrierMode = mode;
+        fullscreenQuadMode = false;
         EnsureCarrierSelection();
+    }
+
+    public void SetFullscreenQuadMode(bool enabled)
+    {
+        fullscreenQuadMode = enabled;
+        EnsureCarrierSelection();
+    }
+
+    public void ApplyPreviewMesh(VolumePreviewSceneProfile profile, int modeIndex)
+    {
+        Initialize();
+        EnsureCarrierSelection();
+
+        if (profile == null)
+        {
+            return;
+        }
+
+        var activeCarrierObject = ResolveActiveCarrierObject();
+        if (activeCarrierObject == null)
+        {
+            return;
+        }
+
+        var activeMesh = profile.GetPreviewMesh(modeIndex);
+        if (activeMesh == null)
+        {
+            return;
+        }
+
+        var activeFilter = ResolveCarrierFilter(activeCarrierObject);
+        if (activeFilter != null && activeFilter.sharedMesh != activeMesh)
+        {
+            activeFilter.sharedMesh = activeMesh;
+        }
     }
 
     public void TickResources(bool force)
@@ -100,9 +143,13 @@ public class VolumePreviewRenderController : MonoBehaviour
     {
         Initialize();
         EnsureCarrierSelection();
+        RebuildTextureIfNeeded(runtimeTexture == null);
 
         propertyBlock.Clear();
-        propertyBlock.SetTexture(VolumeTexId, runtimeTexture);
+        if (runtimeTexture != null)
+        {
+            propertyBlock.SetTexture(VolumeTexId, runtimeTexture);
+        }
 
         var activeLight = ResolveLight();
         if (activeLight != null)
@@ -159,6 +206,11 @@ public class VolumePreviewRenderController : MonoBehaviour
             cubeCarrierRenderer = cubeCarrierObject.GetComponent<MeshRenderer>();
         }
 
+        if (legacyQuadCarrierRenderer == null && legacyQuadCarrierObject != null)
+        {
+            legacyQuadCarrierRenderer = legacyQuadCarrierObject.GetComponent<MeshRenderer>();
+        }
+
         if (capsuleCarrierRenderer == null && capsuleCarrierObject != null)
         {
             capsuleCarrierRenderer = capsuleCarrierObject.GetComponent<MeshRenderer>();
@@ -175,6 +227,16 @@ public class VolumePreviewRenderController : MonoBehaviour
         if (sphereCarrierObject == null)
         {
             sphereCarrierObject = transform.Find("PreviewCarrier_Sphere")?.gameObject;
+        }
+
+        if (legacyQuadCarrierObject == null)
+        {
+            legacyQuadCarrierObject = transform.Find("Preview")?.gameObject;
+        }
+
+        if (legacyQuadCarrierObject == null)
+        {
+            legacyQuadCarrierObject = transform.Find("Preview_JadeVolume")?.gameObject;
         }
 
         if (legacyQuadCarrierObject == null)
@@ -202,30 +264,60 @@ public class VolumePreviewRenderController : MonoBehaviour
             cubeCarrierRenderer = cubeCarrierObject.GetComponent<MeshRenderer>();
         }
 
+        if (legacyQuadCarrierFilter == null && legacyQuadCarrierObject != null)
+        {
+            legacyQuadCarrierFilter = legacyQuadCarrierObject.GetComponent<MeshFilter>();
+        }
+
+        if (sphereCarrierFilter == null && sphereCarrierObject != null)
+        {
+            sphereCarrierFilter = sphereCarrierObject.GetComponent<MeshFilter>();
+        }
+
+        if (cubeCarrierFilter == null && cubeCarrierObject != null)
+        {
+            cubeCarrierFilter = cubeCarrierObject.GetComponent<MeshFilter>();
+        }
+
         if (capsuleCarrierRenderer == null && capsuleCarrierObject != null)
         {
             capsuleCarrierRenderer = capsuleCarrierObject.GetComponent<MeshRenderer>();
         }
 
+        if (capsuleCarrierFilter == null && capsuleCarrierObject != null)
+        {
+            capsuleCarrierFilter = capsuleCarrierObject.GetComponent<MeshFilter>();
+        }
+
         var activeCarrierObject = ResolveActiveCarrierObject();
-        SetCarrierActive(legacyQuadCarrierObject, false);
+        SetCarrierActive(legacyQuadCarrierObject, fullscreenQuadMode);
         SetCarrierActive(sphereCarrierObject, activeCarrierObject == sphereCarrierObject);
         SetCarrierActive(cubeCarrierObject, activeCarrierObject == cubeCarrierObject);
         SetCarrierActive(capsuleCarrierObject, activeCarrierObject == capsuleCarrierObject);
 
         if (rootRenderer != null)
         {
-            rootRenderer.enabled = sphereCarrierObject == null && cubeCarrierObject == null && capsuleCarrierObject == null;
+            rootRenderer.enabled = !fullscreenQuadMode && sphereCarrierObject == null && cubeCarrierObject == null && capsuleCarrierObject == null;
         }
     }
 
     private MeshRenderer ResolveActiveCarrierRenderer()
     {
+        if (fullscreenQuadMode)
+        {
+            return legacyQuadCarrierRenderer != null ? legacyQuadCarrierRenderer : rootRenderer;
+        }
+
         return ResolveCarrierRenderer(carrierMode);
     }
 
     private GameObject ResolveActiveCarrierObject()
     {
+        if (fullscreenQuadMode)
+        {
+            return legacyQuadCarrierObject;
+        }
+
         return ResolveCarrierObject(carrierMode);
     }
 
@@ -238,6 +330,31 @@ public class VolumePreviewRenderController : MonoBehaviour
             VolumeMaterialPreviewController.CarrierMode.Capsule => capsuleCarrierRenderer,
             _ => cubeCarrierRenderer
         };
+    }
+
+    private MeshFilter ResolveCarrierFilter(GameObject carrierObject)
+    {
+        if (carrierObject == legacyQuadCarrierObject)
+        {
+            return legacyQuadCarrierFilter;
+        }
+
+        if (carrierObject == sphereCarrierObject)
+        {
+            return sphereCarrierFilter;
+        }
+
+        if (carrierObject == cubeCarrierObject)
+        {
+            return cubeCarrierFilter;
+        }
+
+        if (carrierObject == capsuleCarrierObject)
+        {
+            return capsuleCarrierFilter;
+        }
+
+        return carrierObject != null ? carrierObject.GetComponent<MeshFilter>() : null;
     }
 
     private GameObject ResolveCarrierObject(VolumeMaterialPreviewController.CarrierMode mode)

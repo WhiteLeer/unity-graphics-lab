@@ -8,13 +8,20 @@ public sealed class VolumePreviewSceneProfile : ScriptableObject
     {
         [SerializeField] private string displayName;
         [SerializeField] private Material previewMaterial;
+        [SerializeField] private Mesh previewMesh;
+        [SerializeField] private bool useFullscreenQuad;
 
         public string DisplayName => displayName;
         public Material PreviewMaterial => previewMaterial;
+        public Mesh PreviewMesh => previewMesh;
+        public bool UseFullscreenQuad => useFullscreenQuad;
     }
 
     [Header("Mode Defaults")]
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
+
+    [Header("Scene Visuals")]
+    [SerializeField] private Color cameraBackgroundColor = Color.black;
 
     [Header("Preview Modes")]
     [SerializeField] private PreviewModeDefinition[] previewModes = System.Array.Empty<PreviewModeDefinition>();
@@ -35,6 +42,7 @@ public sealed class VolumePreviewSceneProfile : ScriptableObject
     [SerializeField] private KeyCode cycleShapeKey = KeyCode.None;
 
     public int PreviewModeCount => previewModes != null ? previewModes.Length : 0;
+    public Color CameraBackgroundColor => cameraBackgroundColor;
     public bool AllowMouseRotate => allowMouseRotate;
     public KeyCode ToggleKey => toggleKey;
     public int MouseButton => mouseButton;
@@ -59,6 +67,28 @@ public sealed class VolumePreviewSceneProfile : ScriptableObject
 
         index = Mathf.Clamp(index, 0, previewModes.Length - 1);
         return previewModes[index].PreviewMaterial;
+    }
+
+    public Mesh GetPreviewMesh(int index)
+    {
+        if (previewModes == null || previewModes.Length == 0)
+        {
+            return null;
+        }
+
+        index = Mathf.Clamp(index, 0, previewModes.Length - 1);
+        return previewModes[index].PreviewMesh;
+    }
+
+    public bool IsPreviewModeSpecial(int index)
+    {
+        if (previewModes == null || previewModes.Length == 0)
+        {
+            return false;
+        }
+
+        index = Mathf.Clamp(index, 0, previewModes.Length - 1);
+        return previewModes[index].UseFullscreenQuad;
     }
 
     public Material[] GetPreviewMaterials()
