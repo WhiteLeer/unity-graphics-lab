@@ -270,7 +270,6 @@ GameObject:
   - component: {fileID: 910000601}
   - component: {fileID: 910000602}
   - component: {fileID: 910000603}
-  - component: {fileID: 910000604}
   m_Layer: 0
   m_Name: SceneTemplate
   m_TagString: Untagged
@@ -329,21 +328,6 @@ MonoBehaviour:
   toggleKey: 9
   targetCamera: {fileID: 834273130}
   currentMode: 0
---- !u!114 &910000604
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 910000600}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0d14cf4a7d9f4f05a4c4d6480d5f1b09, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sceneProfile: {fileID: 11400000, guid: c0c3a983e1b24cbdb5676b4a0f4c2a11, type: 2}
-  toggleController: {fileID: 910000603}
-  previewController: {fileID: 1601155531}
 --- !u!1 &1120903741
 GameObject:
   m_ObjectHideFlags: 0
@@ -480,11 +464,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 1380550694514504986, guid: a8a6e5707fcf4854a85f940415428f6e,
-        type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 0202e89d1a061f14a848b5212d14f241, type: 2}
     - target: {fileID: 1380550694533963552, guid: a8a6e5707fcf4854a85f940415428f6e,
         type: 3}
       propertyPath: carrierMode
@@ -619,13 +598,18 @@ PrefabInstance:
     - target: {fileID: 1380550694533963557, guid: a8a6e5707fcf4854a85f940415428f6e,
         type: 3}
       propertyPath: m_Name
-      value: VolumePreviewTemplate
+      value: PreviewCarrierTemplate
       objectReference: {fileID: 0}
     - target: {fileID: 1380550694533963557, guid: a8a6e5707fcf4854a85f940415428f6e,
         type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1380550694533963559, guid: a8a6e5707fcf4854a85f940415428f6e,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -637,30 +621,12 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 1601155530}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1601155532}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2895cd85ea7540479d4b31590cf4d883, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1601155532 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1380550694533963557, guid: a8a6e5707fcf4854a85f940415428f6e,
-    type: 3}
-  m_PrefabInstance: {fileID: 1601155530}
-  m_PrefabAsset: {fileID: 0}
---- !u!134 &1686617184
-PhysicMaterial:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  dynamicFriction: 0.6
-  staticFriction: 0.6
-  bounciness: 0
-  frictionCombine: 0
-  bounceCombine: 0
 --- !u!1 &1996260005
 GameObject:
   m_ObjectHideFlags: 0

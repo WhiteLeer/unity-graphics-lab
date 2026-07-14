@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   templateScene: {fileID: 102900000, guid: 7d1dd146e35643c88022c3e475e8252f, type: 3}
   templateName: VolumePreview
-  addToDefaults: 1
   description: Shared volume preview template for volume-style scenes.
   preview: {fileID: 0}
   dependencies:
@@ -34,8 +33,12 @@ MonoBehaviour:
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: c989e1ed85cf7154caa922fec53e6af6, type: 3}
     instantiationMode: 0
+  - dependency: {fileID: 2100000, guid: 03e174477083cec49915fb1c34900222, type: 2}
+    instantiationMode: 0
   - dependency: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
     instantiationMode: 1
+  - dependency: {fileID: 2100000, guid: 0df784e6cc3a7ae4b9544ab44950ec77, type: 2}
+    instantiationMode: 0
   - dependency: {fileID: 2800000, guid: 5cdee82a77d13994f83b8fdabed7c301, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: 4dcc0502f8586f941b5c4a66717205e8, type: 3}
@@ -52,8 +55,6 @@ MonoBehaviour:
     instantiationMode: 0
   - dependency: {fileID: 11400000, guid: f7e6f73d5f1e4d1ab5ef8b1d2cc8e401, type: 2}
     instantiationMode: 1
-  - dependency: {fileID: 2100000, guid: 58e73e0874efa5a4cbbacb4b60cddc8a, type: 2}
-    instantiationMode: 0
   - dependency: {fileID: 2800000, guid: f69770e54f2823f43badf77916acad83, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: 39451254daebd6d40b52899c1f1c0c1b, type: 3}
@@ -67,8 +68,6 @@ MonoBehaviour:
   - dependency: {fileID: 2800000, guid: d36f0fe53425e08499a2333cf423634c, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: fa042edbfc40fbd4bad0ab9d505b1223, type: 3}
-    instantiationMode: 0
-  - dependency: {fileID: 2100000, guid: e35200073c755224db43c090fe23e660, type: 2}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: 47a45908f6db0cb44a0d5e961143afec, type: 3}
     instantiationMode: 0
@@ -85,8 +84,6 @@ MonoBehaviour:
   - dependency: {fileID: 2800000, guid: f0b67500f7fad3b4c9f2b13e8f41ba6e, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: 654c582f7f8a5a14dbd7d119cbde215d, type: 3}
-    instantiationMode: 0
-  - dependency: {fileID: 2100000, guid: b2a30ec189d64250be283ee0aa61a5c2, type: 2}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: d18a24d7b4ed50f4387993566d9d3ae2, type: 3}
     instantiationMode: 0
@@ -105,7 +102,7 @@ MonoBehaviour:
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: d4044ea2490d63b43aa1765f8efbf8a9, type: 3}
     instantiationMode: 0
-  - dependency: {fileID: 2100000, guid: e35200073c755224db43c090fe23e660, type: 2}
+  - dependency: {fileID: 2800000, guid: 51eee22c2a633ef4aada830eed57c3fd, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: bd9e8c758250ef449a4b4bfaad7a2133, type: 3}
     instantiationMode: 0
@@ -114,8 +111,6 @@ MonoBehaviour:
   - dependency: {fileID: 2800000, guid: c94ad916058dff743b0f1c969ddbe660, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: fd2fd78b392986e42a12df2177d3b89c, type: 3}
-    instantiationMode: 0
-  - dependency: {fileID: 2800000, guid: 51eee22c2a633ef4aada830eed57c3fd, type: 3}
     instantiationMode: 0
   - dependency: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
     instantiationMode: 1

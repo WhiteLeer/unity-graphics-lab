@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Crystal_Kaleidoscope
+  m_Name: M_Crystal_Preview
   m_Shader: {fileID: 4800000, guid: 310199dd885046b8b774a59b3fc5e3f3, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []

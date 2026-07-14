@@ -14,11 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toggleKey: 9
   cameraBackgroundColor: {r: 0.35, g: 0.25, b: 0.45, a: 1}
+  sceneCameraDefaults:
+    clearFlags: 2
+    orthographic: 1
+    orthographicSize: 1
+    fieldOfView: 60
+    localPosition: {x: 0, y: 0, z: -1}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    nearClipPlane: 0.3
+    farClipPlane: 1000
   previewModes:
-  - displayName: Crystal
+  - displayName: Preview
     previewMaterial: {fileID: 2100000, guid: 61e6d0c3f3d74514a9d667066188d7a1, type: 2}
     previewMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
     useFullscreenQuad: 1
+  - displayName: Object
+    previewMaterial: {fileID: 2100000, guid: 0df784e6cc3a7ae4b9544ab44950ec77, type: 2}
+    previewMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    useFullscreenQuad: 0
   allowMouseRotate: 1
   mouseButton: 0
   rotateSpeedX: 1.05

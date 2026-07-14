@@ -16,35 +16,36 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     // If you need new behavior, decide which owner should change. Do not add side writes in random scene helpers.
     public enum CarrierMode
     {
-        Sphere = 0,
-        Cube = 1,
-        Capsule = 2
+        [InspectorName("球体")] Sphere = 0,
+        [InspectorName("立方体")] Cube = 1,
+        [InspectorName("胶囊体")] Capsule = 2
     }
 
     public enum PreviewShape
     {
-        Sphere = 0,
-        Box = 1,
-        Capsule = 2,
-        JadeLump = 3
+        [InspectorName("球体")] Sphere = 0,
+        [InspectorName("盒状")] Box = 1,
+        [InspectorName("胶囊体")] Capsule = 2,
+        [InspectorName("玉块")] JadeLump = 3
     }
 
-    [SerializeField] private int currentMaterialIndex;
+    [Header("挡位")]
+    [SerializeField, InspectorName("当前挡位")] private int currentMaterialIndex;
 
-    [Header("Shape")]
-    [SerializeField] private PreviewShape previewShape = PreviewShape.Sphere;
-    [SerializeField] private bool allowRuntimeShapeSwitch = true;
-    [SerializeField] private KeyCode cycleShapeKey = KeyCode.None;
+    [Header("形状")]
+    [SerializeField, InspectorName("当前形状")] private PreviewShape previewShape = PreviewShape.Sphere;
+    [SerializeField, InspectorName("允许运行时切形状")] private bool allowRuntimeShapeSwitch = true;
+    [SerializeField, InspectorName("切形状键")] private KeyCode cycleShapeKey = KeyCode.None;
 
-    [Header("Helpers")]
-    [SerializeField] private PreviewInteractionController interactionController;
-    [SerializeField] private VolumePreviewRenderController renderController;
+    [Header("辅助组件")]
+    [SerializeField, InspectorName("交互控制")] private PreviewInteractionController interactionController;
+    [SerializeField, InspectorName("渲染控制")] private VolumePreviewRenderController renderController;
 
     [HideInInspector]
     [SerializeField] private VolumePreviewSceneProfile templateProfile;
 
     // Legacy serialized settings retained only to migrate existing scene data into the new helper components.
-    [Header("Legacy Migration")]
+    [Header("旧数据兼容")]
     [SerializeField, HideInInspector] private Light sourceLight;
     [SerializeField, HideInInspector] private bool preferSubstanceAtlas = true;
     [SerializeField, HideInInspector] private Texture2D densityAtlas;
@@ -181,6 +182,12 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         {
             Apply();
         }
+    }
+
+    public void RefreshCameraDefaults()
+    {
+        EnsureHelperComponents(true);
+        interactionController.CacheCameraDefaults();
     }
 
     protected virtual void BeforeApplyRenderProperties(MaterialPropertyBlock propertyBlock, Material activeMaterial)

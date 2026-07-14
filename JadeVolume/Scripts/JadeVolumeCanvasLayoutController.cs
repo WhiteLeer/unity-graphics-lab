@@ -3,7 +3,7 @@ using UnityEngine;
 [ExecuteAlways]
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(Renderer))]
-public sealed class JadeVolumeController : MonoBehaviour
+public sealed class JadeVolumeCanvasLayoutController : MonoBehaviour
 {
     // Layout-only helper for the jade scene.
     // This script is NOT part of preview ownership for:
@@ -13,7 +13,7 @@ public sealed class JadeVolumeController : MonoBehaviour
     // - preview zoom / rotation
     //
     // It only keeps the presentation canvas in a fixed layout.
-    // Do not add preview state writes here; use JadeVolumePreviewController / ReferencePreviewToggleController instead.
+    // 不要在这里写预览状态；统一走 ReferencePreviewToggleController。
     [Header("画布显示")]
     [SerializeField, InspectorName("自动保持画布布局")] private bool lockCanvasLayout = true;
     [SerializeField, InspectorName("画布宽度")] private float canvasWidth = 16f;

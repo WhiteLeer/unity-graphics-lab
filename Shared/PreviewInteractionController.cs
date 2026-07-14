@@ -7,19 +7,19 @@ public class PreviewInteractionController : MonoBehaviour
     // Owns runtime rotation and zoom. It must not own shape, material mode, or effect-specific shader data.
     // Effects may subclass this when they truly need different interaction behavior in a specific scene.
 
-    [Header("Interaction")]
-    [SerializeField] private bool allowMouseRotate = true;
-    [SerializeField] private int mouseButton = 0;
-    [SerializeField] private float rotateSpeedX = 1.05f;
-    [SerializeField] private float rotateSpeedY = 0.75f;
-    [SerializeField] private Vector2 pitchLimits = new Vector2(-65f, 65f);
-    [SerializeField] private float rotationSmoothTime = 0.12f;
-    [SerializeField] private float rotationInertiaDamping = 4.5f;
-    [SerializeField] private Camera previewCamera;
-    [SerializeField] private bool allowScrollZoom = true;
-    [SerializeField] private float zoomSpeed = 2.4f;
-    [SerializeField] private Vector2 zoomDistanceLimits = new Vector2(1.2f, 4.5f);
-    [SerializeField] private bool applyTransformRotation = true;
+    [Header("交互")]
+    [SerializeField, InspectorName("允许鼠标旋转")] private bool allowMouseRotate = true;
+    [SerializeField, InspectorName("鼠标按键")] private int mouseButton = 0;
+    [SerializeField, InspectorName("横向旋转速度")] private float rotateSpeedX = 1.05f;
+    [SerializeField, InspectorName("纵向旋转速度")] private float rotateSpeedY = 0.75f;
+    [SerializeField, InspectorName("俯仰角限制")] private Vector2 pitchLimits = new Vector2(-65f, 65f);
+    [SerializeField, InspectorName("旋转平滑时间")] private float rotationSmoothTime = 0.12f;
+    [SerializeField, InspectorName("旋转惯性衰减")] private float rotationInertiaDamping = 4.5f;
+    [SerializeField, InspectorName("预览相机")] private Camera previewCamera;
+    [SerializeField, InspectorName("允许滚轮缩放")] private bool allowScrollZoom = true;
+    [SerializeField, InspectorName("缩放速度")] private float zoomSpeed = 2.4f;
+    [SerializeField, InspectorName("缩放范围")] private Vector2 zoomDistanceLimits = new Vector2(1.2f, 4.5f);
+    [SerializeField, InspectorName("把旋转写到物体")] private bool applyTransformRotation = true;
 
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
     [SerializeField, HideInInspector] private bool interactionEnabled = true;

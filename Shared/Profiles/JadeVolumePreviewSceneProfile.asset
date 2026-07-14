@@ -14,6 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toggleKey: 9
   cameraBackgroundColor: {r: 0.73333335, g: 0.8117648, b: 0.64705884, a: 0}
+  sceneCameraDefaults:
+    clearFlags: 2
+    orthographic: 0
+    orthographicSize: 1
+    fieldOfView: 60
+    localPosition: {x: 0, y: 0, z: -1.5}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    nearClipPlane: 0.3
+    farClipPlane: 1000
   previewModes:
   - displayName: Preview
     previewMaterial: {fileID: 2100000, guid: e35200073c755224db43c090fe23e660, type: 2}

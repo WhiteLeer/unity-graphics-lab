@@ -7,11 +7,12 @@ using UnityEditor;
 public sealed class ReferencePreviewToggleController : MonoBehaviour
 {
     // Ownership contract for preview mode switching:
-    // 1. This class owns only currentMode and background color.
+    // 1. This class owns currentMode, background color, and scene-profile application for the preview entrypoint.
     // 2. It must not own preview mesh, root activation, camera pose, zoom, shader property values, or per-material authoring data.
-    // 3. Camera TRS lives on the scene template / camera object itself.
+    // 3. Camera defaults live on the scene profile; runtime zoom still updates the camera object.
     // 4. Scroll zoom is owned by PreviewInteractionController.
 
+    [Header("Bindings")]
     [SerializeField] private VolumeMaterialPreviewController previewController;
     [HideInInspector]
     [SerializeField] private VolumePreviewSceneProfile templateProfile;
@@ -21,12 +22,15 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
     [SerializeField] private Camera targetCamera;
 
+    [Header("Mode State")]
     [SerializeField] private int currentMode = 0;
     private int lastAppliedMode = int.MinValue;
 
     private void OnEnable()
     {
         ApplyTemplateProfileDefaults();
+        ApplyCameraDefaults();
+        SyncPreviewControllerProfile();
         SyncPreviewMaterialCount();
         currentMode = ClampMode(currentMode);
         lastAppliedMode = int.MinValue;
@@ -82,6 +86,8 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     private void OnValidate()
     {
         ApplyTemplateProfileDefaults();
+        ApplyCameraDefaults();
+        SyncPreviewControllerProfile();
         SyncPreviewMaterialCount();
         previewMaterialCount = Mathf.Max(1, previewMaterialCount);
         currentMode = ClampMode(currentMode);
@@ -155,6 +161,27 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
         toggleKey = templateProfile.ToggleKey;
     }
 
+    private void ApplyCameraDefaults()
+    {
+        if (templateProfile == null || targetCamera == null)
+        {
+            return;
+        }
+
+        templateProfile.SceneCameraDefaults.ApplyTo(targetCamera);
+    }
+
+    private void SyncPreviewControllerProfile()
+    {
+        if (previewController == null)
+        {
+            return;
+        }
+
+        previewController.SetSceneProfile(templateProfile);
+        previewController.RefreshCameraDefaults();
+    }
+
     private void SyncPreviewMaterialCount()
     {
         if (templateProfile != null && templateProfile.PreviewModeCount > 0)
@@ -175,6 +202,8 @@ public sealed class ReferencePreviewToggleController : MonoBehaviour
     {
         templateProfile = profile;
         ApplyTemplateProfileDefaults();
+        ApplyCameraDefaults();
+        SyncPreviewControllerProfile();
         SyncPreviewMaterialCount();
 
         if (isActiveAndEnabled)

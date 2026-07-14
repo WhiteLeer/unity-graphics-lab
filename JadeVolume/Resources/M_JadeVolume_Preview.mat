@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_JadeVolume_Default
+  m_Name: M_JadeVolume_Preview
   m_Shader: {fileID: 4800000, guid: 934768bebbe9f134f9fdb5d290b2d5bb, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

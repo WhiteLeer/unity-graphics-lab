@@ -20,24 +20,24 @@ public class VolumePreviewRenderController : MonoBehaviour
     private static readonly int PreviewPitchId = Shader.PropertyToID("_PreviewPitch");
     private static readonly int PreviewYawId = Shader.PropertyToID("_PreviewYaw");
 
-    [Header("Light")]
-    [SerializeField] private Light sourceLight;
+    [Header("光照")]
+    [SerializeField, InspectorName("主光源")] private Light sourceLight;
 
-    [Header("Volume")]
-    [SerializeField] private bool preferSubstanceAtlas = true;
-    [SerializeField] private Texture2D densityAtlas;
-    [SerializeField] private int atlasColumns = 8;
-    [SerializeField] private int atlasRows = 8;
-    [SerializeField] private int textureResolution = 48;
-    [SerializeField] private bool regenerateTexture;
+    [Header("体积")]
+    [SerializeField, InspectorName("优先使用材质图集")] private bool preferSubstanceAtlas = true;
+    [SerializeField, InspectorName("密度图集")] private Texture2D densityAtlas;
+    [SerializeField, InspectorName("图集列数")] private int atlasColumns = 8;
+    [SerializeField, InspectorName("图集行数")] private int atlasRows = 8;
+    [SerializeField, InspectorName("纹理分辨率")] private int textureResolution = 48;
+    [SerializeField, InspectorName("重新生成纹理")] private bool regenerateTexture;
 
-    [Header("Carrier")]
-    [SerializeField] private VolumeMaterialPreviewController.CarrierMode carrierMode = VolumeMaterialPreviewController.CarrierMode.Cube;
-    [SerializeField] private bool fullscreenQuadMode;
-    [SerializeField] private GameObject legacyQuadCarrierObject;
-    [SerializeField] private GameObject sphereCarrierObject;
-    [SerializeField] private GameObject cubeCarrierObject;
-    [SerializeField] private GameObject capsuleCarrierObject;
+    [Header("载体")]
+    [SerializeField, InspectorName("载体模式")] private VolumeMaterialPreviewController.CarrierMode carrierMode = VolumeMaterialPreviewController.CarrierMode.Cube;
+    [SerializeField, InspectorName("全屏四边形模式")] private bool fullscreenQuadMode;
+    [SerializeField, InspectorName("旧四边形载体")] private GameObject legacyQuadCarrierObject;
+    [SerializeField, InspectorName("球体载体")] private GameObject sphereCarrierObject;
+    [SerializeField, InspectorName("立方体载体")] private GameObject cubeCarrierObject;
+    [SerializeField, InspectorName("胶囊体载体")] private GameObject capsuleCarrierObject;
 
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
 
