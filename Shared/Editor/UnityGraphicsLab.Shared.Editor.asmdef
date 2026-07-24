@@ -3,7 +3,10 @@
     "rootNamespace": "UnityGraphicsLab.Shared",
     "references": [
         "UnityGraphicsLab.Runtime",
-        "Unity.RenderPipelines.Universal.Editor"
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Universal.Editor",
+        "Unity.ugui"
     ],
     "includePlatforms": [
         "Editor"

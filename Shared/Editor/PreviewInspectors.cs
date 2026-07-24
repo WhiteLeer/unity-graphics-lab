@@ -193,7 +193,6 @@ public sealed class VolumeMaterialPreviewControllerEditor : Editor
                 EditorGUILayout.PropertyField(allowScrollZoomProp, new GUIContent("允许滚轮缩放"));
                 EditorGUILayout.PropertyField(zoomSpeedProp, new GUIContent("缩放速度"));
                 EditorGUILayout.PropertyField(zoomDistanceLimitsProp, new GUIContent("缩放范围"));
-                EditorGUILayout.PropertyField(applyTransformRotationProp, new GUIContent("把旋转写到物体"));
                 using (new EditorGUI.DisabledScope(true))
                 {
                     EditorGUILayout.PropertyField(previewStateInitializedProp, new GUIContent("已初始化"));
@@ -270,7 +269,6 @@ public sealed class PreviewInteractionControllerEditor : Editor
             EditorGUILayout.PropertyField(pitchLimitsProp, new GUIContent("俯仰角限制"));
             EditorGUILayout.PropertyField(rotationSmoothTimeProp, new GUIContent("旋转平滑时间"));
             EditorGUILayout.PropertyField(rotationInertiaDampingProp, new GUIContent("旋转惯性衰减"));
-            EditorGUILayout.PropertyField(applyTransformRotationProp, new GUIContent("把旋转写到物体"));
         });
 
         DrawSection("缩放", () =>
@@ -466,12 +464,12 @@ public sealed class VolumePreviewSceneProfileEditor : Editor
                 {
                     var displayNameProp = element.FindPropertyRelative("displayName");
                     var materialProp = element.FindPropertyRelative("previewMaterial");
-                    var meshProp = element.FindPropertyRelative("previewMesh");
+                    var prefabProp = element.FindPropertyRelative("previewPrefab");
                     var fullscreenProp = element.FindPropertyRelative("useFullscreenQuad");
 
                     EditorGUILayout.PropertyField(displayNameProp, new GUIContent($"挡位 {i} 名称"));
                     EditorGUILayout.PropertyField(materialProp, new GUIContent("预览材质"));
-                    EditorGUILayout.PropertyField(meshProp, new GUIContent("预览网格"));
+                    EditorGUILayout.PropertyField(prefabProp, new GUIContent("预览预制体"));
                     EditorGUILayout.PropertyField(fullscreenProp, new GUIContent("使用全屏四边形"));
                 }
             }
@@ -489,7 +487,6 @@ public sealed class VolumePreviewSceneProfileEditor : Editor
             EditorGUILayout.PropertyField(allowScrollZoomProp, new GUIContent("允许滚轮缩放"));
             EditorGUILayout.PropertyField(zoomSpeedProp, new GUIContent("缩放速度"));
             EditorGUILayout.PropertyField(zoomDistanceLimitsProp, new GUIContent("缩放范围"));
-            EditorGUILayout.PropertyField(applyTransformRotationProp, new GUIContent("把旋转写到物体"));
             EditorGUILayout.PropertyField(allowRuntimeShapeSwitchProp, new GUIContent("允许运行时切形状"));
             EditorGUILayout.PropertyField(cycleShapeKeyProp, new GUIContent("切形状键"));
         });

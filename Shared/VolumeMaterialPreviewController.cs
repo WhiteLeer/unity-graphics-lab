@@ -73,6 +73,8 @@ public class VolumeMaterialPreviewController : MonoBehaviour
 
     [SerializeField, HideInInspector] private bool previewStateInitialized;
 
+    private int lastFramedMaterialIndex = int.MinValue;
+
     private static readonly int ShapeModeId = Shader.PropertyToID("_ShapeMode");
 
     protected virtual PreviewShape DefaultPreviewShape => PreviewShape.Sphere;
@@ -86,16 +88,17 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         EnsureHelperComponents(true);
         MigrateLegacySettingsIfNeeded();
         InitializePreviewStateOnce();
-        interactionController.CacheCameraDefaults();
         renderController.TickResources(true);
         Apply();
+        interactionController.CacheCameraDefaults(renderController.GetOrbitTargetPosition(transform.position));
     }
 
     private void Update()
     {
         HandleRuntimeShapeInput();
-        interactionController.Tick(transform);
+        interactionController.Tick(renderController.GetOrbitTargetPosition(transform.position));
         renderController.TickResources(false);
+
         Apply();
     }
 
@@ -128,6 +131,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     public void SetCarrierMode(CarrierMode mode)
     {
         EnsureHelperComponents(true);
+        carrierMode = mode;
         renderController.SetCarrierMode(mode);
         Apply();
     }
@@ -187,7 +191,7 @@ public class VolumeMaterialPreviewController : MonoBehaviour
     public void RefreshCameraDefaults()
     {
         EnsureHelperComponents(true);
-        interactionController.CacheCameraDefaults();
+        interactionController.CacheCameraDefaults(renderController.GetOrbitTargetPosition(transform.position));
     }
 
     protected virtual void BeforeApplyRenderProperties(MaterialPropertyBlock propertyBlock, Material activeMaterial)
@@ -340,12 +344,14 @@ public class VolumeMaterialPreviewController : MonoBehaviour
         {
             ResetFullscreenQuadTransform();
             renderController.SetFullscreenQuadMode(true);
+            renderController.AlignFullscreenQuadToCamera(interactionController.PreviewCamera);
         }
         else
         {
             carrierMode = MapPreviewShapeToCarrierMode(previewShape);
             renderController.SetFullscreenQuadMode(false);
             renderController.SetCarrierMode(carrierMode);
+            renderController.SetModeCarrierIndex(currentMaterialIndex);
         }
 
         renderController.ApplyPreviewMesh(templateProfile, currentMaterialIndex);
@@ -357,6 +363,17 @@ public class VolumeMaterialPreviewController : MonoBehaviour
             OverrideMaterialShapeMode,
             interactionController.Pitch,
             interactionController.Yaw);
+
+        var orbitTargetPosition = renderController.GetOrbitTargetPosition(transform.position);
+        if (Application.isPlaying && lastFramedMaterialIndex != currentMaterialIndex)
+        {
+            var recommendedDistance = renderController.GetRecommendedOrbitDistance(interactionController.PreviewCamera);
+            if (recommendedDistance > 0.0f)
+            {
+                interactionController.FramePreview(orbitTargetPosition, recommendedDistance);
+                lastFramedMaterialIndex = currentMaterialIndex;
+            }
+        }
 
         BeforeApplyRenderProperties(propertyBlock, activeMaterial);
         renderController.ApplyPreparedPropertyBlock(activeMaterial, propertyBlock);

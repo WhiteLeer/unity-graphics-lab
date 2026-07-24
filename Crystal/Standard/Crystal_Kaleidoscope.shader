@@ -23,8 +23,8 @@ Shader "MaterialFX/Crystal/Kaleidoscope"
                 "LightMode"="UniversalForward"
             }
             Cull Off
-            ZWrite On
-            ZTest LEqual
+            ZWrite Off
+            ZTest Always
 
             HLSLPROGRAM
             #pragma target 4.0

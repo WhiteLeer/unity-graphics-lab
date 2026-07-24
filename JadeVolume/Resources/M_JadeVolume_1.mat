@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_JadeVolume_1
+  m_Shader: {fileID: 4800000, guid: b57e5a4f43df4a5d83cda88903a6378d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _FresnelPower: 4.42
+    - _ScatterBlend: 0.692
+    - _ScatterBoost: 3
+    - _ScatterCurve: 0.45
+    - _ScatterDistance: 1.34
+    - _ScatterIor: 1.01
+    - _ScatterStep: 0.179
+    - _ScatterStrength: 21.2
+    - _SpecularMultiplier: 17.7
+    - _SpecularRoughness: 0.1
+    m_Colors:
+    - _AmbientTint: {r: 0, g: 0, b: 0, a: 1}
+    - _BaseColor: {r: 0.75, g: 0.9, b: 0.35, a: 1}
+    - _SkyTint: {r: 0.36810252, g: 0.55879027, b: 0.8301887, a: 1}
+  m_BuildTextureStacks: []

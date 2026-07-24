@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 [ExecuteAlways]
 public sealed class GraphicsExamplePipelineBootstrap : MonoBehaviour
@@ -15,6 +16,13 @@ public sealed class GraphicsExamplePipelineBootstrap : MonoBehaviour
     private void OnEnable()
     {
         useAlternate = useAlternateAtStart;
+        Apply();
+    }
+
+    private void Start()
+    {
+        // QualitySettings can reapply its pipeline when Play mode starts.
+        // Apply once after that transition so the Game view uses this scene's pipeline.
         Apply();
     }
 
@@ -50,5 +58,11 @@ public sealed class GraphicsExamplePipelineBootstrap : MonoBehaviour
 
         GraphicsSettings.defaultRenderPipeline = target;
         QualitySettings.renderPipeline = target;
+
+        if (Application.isPlaying && Camera.main != null)
+        {
+            var cameraData = Camera.main.GetUniversalAdditionalCameraData();
+            cameraData.renderPostProcessing = true;
+        }
     }
 }

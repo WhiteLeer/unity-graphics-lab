@@ -10,7 +10,8 @@ Unity 图形实验场：用于沉淀可复现的渲染算法验证、效果对�
   - `SSR/`
   - `SSPR/`
 - `Crystal/`
-- `SSS/`
+- `JadeVolume/`
+- `Water/`
 - 其他效果目录
   - 按效果名称单独建目录，而不是再按 `Post`、`Surface` 一类技术桶拆分
 

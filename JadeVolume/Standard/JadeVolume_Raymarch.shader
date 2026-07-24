@@ -57,8 +57,9 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
             {
                 "LightMode" = "UniversalForward"
             }
-            Cull Back
-            ZWrite On
+            Cull Off
+            ZWrite Off
+            ZTest LEqual
 
             HLSLPROGRAM
             #pragma target 3.0
@@ -111,7 +112,6 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float3 positionOS : TEXCOORD1;
-                float4 screenPos : TEXCOORD2;
             };
 
             float3x3 RotateAxis(float3 v, float angle)
@@ -426,13 +426,12 @@ Shader "SurfaceLab/JadeVolume/Raymarch"
                 o.positionCS = pos.positionCS;
                 o.positionWS = pos.positionWS;
                 o.positionOS = input.positionOS.xyz;
-                o.screenPos = ComputeScreenPos(pos.positionCS);
                 return o;
             }
 
             half4 Frag(Varyings i) : SV_Target
             {
-                float2 uv = i.screenPos.xy / i.screenPos.w;
+                float2 uv = i.positionOS.xy + 0.5;
                 float lr = 0.5 + 0.5 * cos(5.1 * 0.4 - PI);
                 lr = smoothstep(0.13, 1.0, lr);
 

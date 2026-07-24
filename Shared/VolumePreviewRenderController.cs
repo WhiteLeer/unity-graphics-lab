@@ -19,6 +19,7 @@ public class VolumePreviewRenderController : MonoBehaviour
     private static readonly int ShapeModeId = Shader.PropertyToID("_ShapeMode");
     private static readonly int PreviewPitchId = Shader.PropertyToID("_PreviewPitch");
     private static readonly int PreviewYawId = Shader.PropertyToID("_PreviewYaw");
+    private static readonly int FullscreenQuadId = Shader.PropertyToID("_FullscreenQuad");
 
     [Header("光照")]
     [SerializeField, InspectorName("主光源")] private Light sourceLight;
@@ -38,6 +39,7 @@ public class VolumePreviewRenderController : MonoBehaviour
     [SerializeField, InspectorName("球体载体")] private GameObject sphereCarrierObject;
     [SerializeField, InspectorName("立方体载体")] private GameObject cubeCarrierObject;
     [SerializeField, InspectorName("胶囊体载体")] private GameObject capsuleCarrierObject;
+    [SerializeField, InspectorName("挡位预制体载体")] private GameObject[] modeCarrierObjects = Array.Empty<GameObject>();
 
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
 
@@ -50,6 +52,7 @@ public class VolumePreviewRenderController : MonoBehaviour
     private MeshFilter sphereCarrierFilter = null!;
     private MeshFilter cubeCarrierFilter = null!;
     private MeshFilter capsuleCarrierFilter = null!;
+    private GameObject activeModeCarrierObject;
     private MaterialPropertyBlock propertyBlock = null!;
     private Texture3D runtimeTexture;
     private Texture2D lastAtlasSource;
@@ -87,6 +90,7 @@ public class VolumePreviewRenderController : MonoBehaviour
 
     public void SetCarrierMode(VolumeMaterialPreviewController.CarrierMode mode)
     {
+        activeModeCarrierObject = null;
         carrierMode = mode;
         fullscreenQuadMode = false;
         EnsureCarrierSelection();
@@ -94,8 +98,41 @@ public class VolumePreviewRenderController : MonoBehaviour
 
     public void SetFullscreenQuadMode(bool enabled)
     {
+        if (enabled)
+        {
+            activeModeCarrierObject = null;
+        }
         fullscreenQuadMode = enabled;
         EnsureCarrierSelection();
+    }
+
+    public void SetModeCarrierIndex(int modeIndex)
+    {
+        activeModeCarrierObject = modeCarrierObjects != null && modeIndex >= 0 && modeIndex < modeCarrierObjects.Length
+            ? modeCarrierObjects[modeIndex]
+            : null;
+        EnsureCarrierSelection();
+    }
+
+    public void AlignFullscreenQuadToCamera(Camera previewCamera)
+    {
+        Initialize();
+        EnsureCarrierSelection();
+
+        if (!fullscreenQuadMode || legacyQuadCarrierObject == null || previewCamera == null)
+        {
+            return;
+        }
+
+        var quadTransform = legacyQuadCarrierObject.transform;
+        var distance = Mathf.Max(previewCamera.nearClipPlane + 0.05f, 1f);
+        var halfHeight = distance * Mathf.Tan(0.5f * previewCamera.fieldOfView * Mathf.Deg2Rad);
+        var height = 2f * halfHeight * 1.05f;
+        var width = height * Mathf.Max(previewCamera.aspect, 0.01f);
+        quadTransform.SetPositionAndRotation(
+            previewCamera.transform.position + previewCamera.transform.forward * distance,
+            previewCamera.transform.rotation);
+        quadTransform.localScale = new Vector3(width, height, 1f);
     }
 
     public void ApplyPreviewMesh(VolumePreviewSceneProfile profile, int modeIndex)
@@ -103,7 +140,7 @@ public class VolumePreviewRenderController : MonoBehaviour
         Initialize();
         EnsureCarrierSelection();
 
-        if (profile == null)
+        if (fullscreenQuadMode || activeModeCarrierObject != null || profile == null)
         {
             return;
         }
@@ -125,6 +162,62 @@ public class VolumePreviewRenderController : MonoBehaviour
         {
             activeFilter.sharedMesh = activeMesh;
         }
+    }
+
+    public Vector3 GetOrbitTargetPosition(Vector3 fallbackPosition)
+    {
+        Initialize();
+
+        var activeCarrierObject = ResolveActiveCarrierObject();
+        if (activeCarrierObject == null || fullscreenQuadMode)
+        {
+            return fallbackPosition;
+        }
+
+        var renderers = activeCarrierObject.GetComponentsInChildren<Renderer>(true);
+        if (renderers == null || renderers.Length == 0)
+        {
+            return activeCarrierObject.transform.position;
+        }
+
+        var bounds = renderers[0].bounds;
+        for (var i = 1; i < renderers.Length; i++)
+        {
+            bounds.Encapsulate(renderers[i].bounds);
+        }
+
+        return bounds.center;
+    }
+
+    public float GetRecommendedOrbitDistance(Camera previewCamera)
+    {
+        Initialize();
+
+        var activeCarrierObject = ResolveActiveCarrierObject();
+        if (activeCarrierObject == null || fullscreenQuadMode || previewCamera == null || previewCamera.orthographic)
+        {
+            return -1.0f;
+        }
+
+        var renderers = activeCarrierObject.GetComponentsInChildren<Renderer>(true);
+        if (renderers == null || renderers.Length == 0)
+        {
+            return -1.0f;
+        }
+
+        var bounds = renderers[0].bounds;
+        for (var i = 1; i < renderers.Length; i++)
+        {
+            bounds.Encapsulate(renderers[i].bounds);
+        }
+
+        var halfFov = 0.5f * previewCamera.fieldOfView * Mathf.Deg2Rad;
+        var tangent = Mathf.Max(Mathf.Tan(halfFov), 0.001f);
+        var aspect = Mathf.Max(previewCamera.aspect, 0.001f);
+        var radius = bounds.extents.magnitude;
+        var verticalDistance = radius / tangent;
+        var horizontalDistance = radius / (tangent * aspect);
+        return Mathf.Max(verticalDistance, horizontalDistance) * 1.25f;
     }
 
     public void TickResources(bool force)
@@ -171,6 +264,7 @@ public class VolumePreviewRenderController : MonoBehaviour
 
         propertyBlock.SetFloat(PreviewPitchId, previewPitch);
         propertyBlock.SetFloat(PreviewYawId, previewYaw);
+        propertyBlock.SetFloat(FullscreenQuadId, fullscreenQuadMode ? 1.0f : 0.0f);
         return propertyBlock;
     }
 
@@ -181,6 +275,17 @@ public class VolumePreviewRenderController : MonoBehaviour
         if (activeRenderer == null)
         {
             activeRenderer = rootRenderer;
+        }
+
+        if (activeModeCarrierObject != null)
+        {
+            foreach (var renderer in activeModeCarrierObject.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                renderer.sharedMaterial = activeMaterial;
+                renderer.SetPropertyBlock(preparedPropertyBlock);
+            }
+
+            return;
         }
 
         if (activeRenderer != null && activeRenderer.sharedMaterial != activeMaterial)
@@ -294,6 +399,13 @@ public class VolumePreviewRenderController : MonoBehaviour
         SetCarrierActive(sphereCarrierObject, activeCarrierObject == sphereCarrierObject);
         SetCarrierActive(cubeCarrierObject, activeCarrierObject == cubeCarrierObject);
         SetCarrierActive(capsuleCarrierObject, activeCarrierObject == capsuleCarrierObject);
+        if (modeCarrierObjects != null)
+        {
+            foreach (var modeCarrierObject in modeCarrierObjects)
+            {
+                SetCarrierActive(modeCarrierObject, modeCarrierObject == activeModeCarrierObject && !fullscreenQuadMode);
+            }
+        }
 
         if (rootRenderer != null)
         {
@@ -308,6 +420,11 @@ public class VolumePreviewRenderController : MonoBehaviour
             return legacyQuadCarrierRenderer != null ? legacyQuadCarrierRenderer : rootRenderer;
         }
 
+        if (activeModeCarrierObject != null)
+        {
+            return activeModeCarrierObject.GetComponentInChildren<MeshRenderer>(true);
+        }
+
         return ResolveCarrierRenderer(carrierMode);
     }
 
@@ -318,7 +435,7 @@ public class VolumePreviewRenderController : MonoBehaviour
             return legacyQuadCarrierObject;
         }
 
-        return ResolveCarrierObject(carrierMode);
+        return activeModeCarrierObject != null ? activeModeCarrierObject : ResolveCarrierObject(carrierMode);
     }
 
     private MeshRenderer ResolveCarrierRenderer(VolumeMaterialPreviewController.CarrierMode mode)

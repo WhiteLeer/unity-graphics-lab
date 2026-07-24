@@ -2,22 +2,21 @@ Shader "SurfaceLab/JadeVolume/VolumeObject"
 {
     Properties
     {
-        [MainColor] _BaseColor("主体颜色", Color) = (0.72, 0.86, 0.4, 1)
-        _AmbientTint("环境底色", Color) = (0.08, 0.18, 0.04, 1)
-        _ScatterColor("透射颜色", Color) = (0.78, 0.96, 0.78, 1)
-        _SkyTint("边缘冷光", Color) = (0.55, 0.78, 0.82, 1)
+        [MainColor] _BaseColor("主体颜色", Color) = (0.75, 0.9, 0.35, 1)
+        _AmbientTint("环境底色", Color) = (0.0, 0.0, 0.0, 1)
+        _SkyTint("边缘冷光", Color) = (0.368, 0.559, 0.83, 1)
 
-        _ScatterStrength("透射强度", Range(0.0, 8.0)) = 2.2
-        _ScatterDistance("透射距离", Range(0.2, 4.0)) = 2.5
-        _ScatterStep("透射步长", Range(0.02, 0.5)) = 0.2
-        _ScatterBlend("明暗混合", Range(0.0, 1.0)) = 0.7
-        _ScatterBoost("透光提亮", Range(0.0, 8.0)) = 2.4
-        _ScatterCurve("透光曲线", Range(0.2, 4.0)) = 1.2
-        _ScatterIor("折射率", Range(1.01, 2.0)) = 1.12
+        _ScatterStrength("透射强度", Range(0.0, 64.0)) = 21.2
+        _ScatterDistance("透射距离", Range(0.2, 8.0)) = 1.34
+        _ScatterStep("厚度归一化步长", Range(0.02, 0.5)) = 0.179
+        _ScatterBlend("明暗混合", Range(0.0, 1.0)) = 0.692
+        _ScatterBoost("透光提亮", Range(0.0, 8.0)) = 3.0
+        _ScatterCurve("透光曲线", Range(0.1, 2.0)) = 0.45
+        _ScatterIor("折射率", Range(1.01, 2.0)) = 1.121
 
-        _FresnelPower("边缘亮度范围", Range(0.2, 8.0)) = 3.5
-        _SpecularRoughness("高光柔和度", Range(0.02, 1.0)) = 0.28
-        _SpecularMultiplier("高光强度", Range(0.0, 8.0)) = 1.6
+        _FresnelPower("边缘亮度范围", Range(0.2, 8.0)) = 4.42
+        _SpecularRoughness("高光柔和度", Range(0.02, 1.0)) = 0.1
+        _SpecularMultiplier("高光强度", Range(0.0, 64.0)) = 17.7
     }
 
     SubShader
@@ -31,12 +30,57 @@ Shader "SurfaceLab/JadeVolume/VolumeObject"
 
         Pass
         {
+            Name "JadeThicknessBackface"
+            Tags
+            {
+                "LightMode" = "JadeThicknessBackface"
+            }
+            Cull Front
+            ZWrite On
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex ThicknessVert
+            #pragma fragment ThicknessFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct ThicknessAttributes
+            {
+                float4 positionOS : POSITION;
+            };
+
+            struct ThicknessVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+            };
+
+            ThicknessVaryings ThicknessVert(ThicknessAttributes input)
+            {
+                ThicknessVaryings output;
+                VertexPositionInputs positionInputs = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = positionInputs.positionCS;
+                output.positionWS = positionInputs.positionWS;
+                return output;
+            }
+
+            float ThicknessFrag(ThicknessVaryings input) : SV_Target
+            {
+                return -TransformWorldToView(input.positionWS).z;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
             Name "JadeVolumeObject"
             Tags
             {
                 "LightMode" = "UniversalForward"
             }
-            Cull Off
+            Cull Back
             ZWrite On
 
             HLSLPROGRAM
@@ -49,7 +93,6 @@ Shader "SurfaceLab/JadeVolume/VolumeObject"
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseColor;
                 float4 _AmbientTint;
-                float4 _ScatterColor;
                 float4 _SkyTint;
                 float _ScatterStrength;
                 float _ScatterDistance;
@@ -66,6 +109,10 @@ Shader "SurfaceLab/JadeVolume/VolumeObject"
             float3 _VolumeLightPositionWS;
             float4 _VolumeLightColor;
             float _VolumeLightIntensity;
+            float _JadeThicknessAvailable;
+
+            TEXTURE2D_X_FLOAT(_JadeBackfaceDepthTexture);
+            SAMPLER(sampler_JadeBackfaceDepthTexture);
 
             struct Attributes
             {
@@ -96,42 +143,82 @@ Shader "SurfaceLab/JadeVolume/VolumeObject"
 
             float JadeVolumeG1V(float dnv, float k)
             {
-                return 1.0 / (dnv * (1.0 - k) + k);
+                return 1.0 / max(dnv * (1.0 - k) + k, 1e-4);
+            }
+
+            float3 JadeVolumeSafeNormalize(float3 value, float3 fallback)
+            {
+                float lengthSquared = dot(value, value);
+                return lengthSquared > 1e-8
+                    ? value * rsqrt(lengthSquared)
+                    : fallback;
             }
 
             float JadeVolumeGGX(float3 n, float3 v, float3 l, float rough, float f0)
             {
                 float alpha = rough * rough;
-                float3 h = normalize(v + l);
+                float3 h = JadeVolumeSafeNormalize(v + l, n);
                 float dnl = saturate(dot(n, l));
                 float dnv = saturate(dot(n, v));
                 float dnh = saturate(dot(n, h));
                 float dlh = saturate(dot(l, h));
                 float asqr = alpha * alpha;
-                float den = dnh * dnh * (asqr - 1.0) + 1.0;
+                float den = max(dnh * dnh * (asqr - 1.0) + 1.0, 1e-4);
                 float d = asqr / (PI * den * den);
                 float f = f0 + (1.0 - f0) * pow(1.0 - dlh, 5.0);
                 float vis = JadeVolumeG1V(dnl, alpha) * JadeVolumeG1V(dnv, alpha);
                 return dnl * d * f * vis;
             }
 
-            float JadeVolumeSimpleTransmission(float3 n, float3 v)
+            float JadeVolumeMeshThickness(Varyings input, float3 n, float3 v)
             {
                 float ndv = saturate(dot(n, v));
-                float thickness = pow(1.0 - ndv, max(_ScatterIor - 1.0, 0.1));
-                float softened = thickness * _ScatterDistance;
-                float stepped = softened / max(_ScatterStep, 0.001);
-                float transmission = (1.0 - exp(-stepped * max(_ScatterStrength, 1e-3))) * _ScatterBoost;
-                return pow(saturate(transmission), max(_ScatterCurve, 1e-3));
+                float fallbackThickness = max(_ScatterDistance * ndv, _ScatterStep);
+
+                float2 screenUV = GetNormalizedScreenSpaceUV(input.positionCS);
+                screenUV = UnityStereoTransformScreenSpaceTex(screenUV);
+                float backfaceDepth = SAMPLE_TEXTURE2D_X(
+                    _JadeBackfaceDepthTexture,
+                    sampler_JadeBackfaceDepthTexture,
+                    screenUV).r;
+                float frontfaceDepth = -TransformWorldToView(input.positionWS).z;
+                float geometricThickness = max(backfaceDepth - frontfaceDepth, 0.0);
+                float validBackface = step(1e-4, geometricThickness);
+                float thickness = lerp(
+                    fallbackThickness,
+                    geometricThickness,
+                    saturate(_JadeThicknessAvailable) * validBackface);
+
+                float3 incidentDirection = -v;
+                float3 refractedDirection = refract(
+                    incidentDirection,
+                    n,
+                    rcp(max(_ScatterIor, 1.001)));
+                refractedDirection = JadeVolumeSafeNormalize(refractedDirection, -n);
+
+                // Convert camera-ray thickness to a locally planar refracted optical path.
+                float normalThickness = thickness * max(ndv, 0.02);
+                return normalThickness / max(abs(dot(refractedDirection, n)), 0.02);
             }
 
-            half4 Frag(Varyings i, bool isFrontFace : SV_IsFrontFace) : SV_Target
+            float JadeVolumeReferenceTransmission(float opticalThickness)
             {
-                float3 v = normalize(i.viewDirWS);
-                float faceSign = isFrontFace ? 1.0 : -1.0;
-                float3 n = normalize(i.normalWS) * faceSign;
-                float3 l = normalize(_VolumeLightPositionWS - i.positionWS);
-                float transmission = JadeVolumeSimpleTransmission(n, v);
+                float accumulatedThickness = opticalThickness / max(_ScatterStep, 0.001);
+                float subsurface = _ScatterStrength * pow(_ScatterDistance * 0.5, 3.0) /
+                                   max(accumulatedThickness, 1e-4);
+                return _ScatterBoost * smoothstep(
+                    0.0,
+                    2.0,
+                    pow(max(subsurface, 0.0), max(_ScatterCurve, 1e-3)));
+            }
+
+            half4 Frag(Varyings i) : SV_Target
+            {
+                float3 v = JadeVolumeSafeNormalize(i.viewDirWS, float3(0.0, 0.0, 1.0));
+                float3 n = JadeVolumeSafeNormalize(i.normalWS, float3(0.0, 1.0, 0.0));
+                float3 l = JadeVolumeSafeNormalize(_VolumeLightPositionWS - i.positionWS, n);
+                float opticalThickness = JadeVolumeMeshThickness(i, n, v);
+                float transmission = JadeVolumeReferenceTransmission(opticalThickness);
 
                 float nDotL = saturate(dot(n, l));
                 float fresnel = pow(1.0 - saturate(dot(n, v)), _FresnelPower);
@@ -141,13 +228,12 @@ Shader "SurfaceLab/JadeVolume/VolumeObject"
                 float attenuation = _VolumeLightIntensity / (1.0 + lightDistance * lightDistance);
                 float3 lightColor = _VolumeLightColor.rgb * attenuation;
 
-                float3 color = _AmbientTint.rgb * 0.18;
-                color += _BaseColor.rgb * (0.22 + 0.78 * nDotL);
-                color += _ScatterColor.rgb * transmission * _ScatterBlend;
-                color += _SkyTint.rgb * fresnel;
+                float jadeLighting = lerp(nDotL, transmission, _ScatterBlend);
+                float3 color = _AmbientTint.rgb;
+                color += _BaseColor.rgb * jadeLighting;
                 color += spec * lightColor;
-                color *= lightColor;
-                color += _AmbientTint.rgb * 0.06;
+                color += fresnel * _SkyTint.rgb * 2.0;
+                color *= 0.5;
 
                 return float4(saturate(color), 1.0);
             }

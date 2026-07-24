@@ -8,12 +8,12 @@ public sealed class VolumePreviewSceneProfile : ScriptableObject
     {
         [SerializeField, InspectorName("挡位名称")] private string displayName;
         [SerializeField, InspectorName("预览材质")] private Material previewMaterial;
-        [SerializeField, InspectorName("预览网格")] private Mesh previewMesh;
+        [SerializeField, InspectorName("预览预制体")] private GameObject previewPrefab;
         [SerializeField, InspectorName("使用全屏四边形")] private bool useFullscreenQuad;
 
         public string DisplayName => displayName;
         public Material PreviewMaterial => previewMaterial;
-        public Mesh PreviewMesh => previewMesh;
+        public GameObject PreviewPrefab => previewPrefab;
         public bool UseFullscreenQuad => useFullscreenQuad;
     }
 
@@ -105,13 +105,25 @@ public sealed class VolumePreviewSceneProfile : ScriptableObject
 
     public Mesh GetPreviewMesh(int index)
     {
+        var prefab = GetPreviewPrefab(index);
+        if (prefab == null)
+        {
+            return null;
+        }
+
+        var filter = prefab.GetComponentInChildren<MeshFilter>(true);
+        return filter != null ? filter.sharedMesh : null;
+    }
+
+    public GameObject GetPreviewPrefab(int index)
+    {
         if (previewModes == null || previewModes.Length == 0)
         {
             return null;
         }
 
         index = Mathf.Clamp(index, 0, previewModes.Length - 1);
-        return previewModes[index].PreviewMesh;
+        return previewModes[index].PreviewPrefab;
     }
 
     public bool IsPreviewModeSpecial(int index)
@@ -124,6 +136,7 @@ public sealed class VolumePreviewSceneProfile : ScriptableObject
         index = Mathf.Clamp(index, 0, previewModes.Length - 1);
         return previewModes[index].UseFullscreenQuad;
     }
+
 
     public Material[] GetPreviewMaterials()
     {

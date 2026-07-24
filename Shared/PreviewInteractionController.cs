@@ -19,7 +19,8 @@ public class PreviewInteractionController : MonoBehaviour
     [SerializeField, InspectorName("允许滚轮缩放")] private bool allowScrollZoom = true;
     [SerializeField, InspectorName("缩放速度")] private float zoomSpeed = 2.4f;
     [SerializeField, InspectorName("缩放范围")] private Vector2 zoomDistanceLimits = new Vector2(1.2f, 4.5f);
-    [SerializeField, InspectorName("把旋转写到物体")] private bool applyTransformRotation = true;
+    // 保留旧序列化字段，兼容已有场景；旋转现在始终由相机轨道承担。
+    [SerializeField, HideInInspector] private bool applyTransformRotation = true;
 
     [SerializeField, HideInInspector] private bool adoptedLegacySettings;
     [SerializeField, HideInInspector] private bool interactionEnabled = true;
@@ -36,6 +37,7 @@ public class PreviewInteractionController : MonoBehaviour
 
     public float Pitch => pitch;
     public float Yaw => yaw;
+    public Camera PreviewCamera => ResolvePreviewCamera();
 
     public void SetInteractionEnabled(bool enabled)
     {
@@ -85,10 +87,15 @@ public class PreviewInteractionController : MonoBehaviour
 
     public void Tick(Transform previewTransform)
     {
-        HandleMouseRotate(previewTransform);
+        Tick(previewTransform != null ? previewTransform.position : Vector3.zero);
     }
 
-    public void CacheCameraDefaults()
+    public void Tick(Vector3 orbitTargetPosition)
+    {
+        HandleMouseRotate(orbitTargetPosition);
+    }
+
+    public void CacheCameraDefaults(Transform orbitTarget = null)
     {
         var cam = ResolvePreviewCamera();
         if (cam == null)
@@ -96,8 +103,30 @@ public class PreviewInteractionController : MonoBehaviour
             return;
         }
 
-        zoomDistance = Mathf.Clamp(Mathf.Abs(cam.transform.localPosition.z), zoomDistanceLimits.x, zoomDistanceLimits.y);
+        var target = orbitTarget != null ? orbitTarget.position : Vector3.zero;
+        CacheCameraDefaults(target);
+    }
+
+    public void CacheCameraDefaults(Vector3 orbitTargetPosition)
+    {
+        var cam = ResolvePreviewCamera();
+        if (cam == null)
+        {
+            return;
+        }
+
+        var target = orbitTargetPosition;
+        var offset = cam.transform.position - target;
+        var distance = Mathf.Max(offset.magnitude, 0.0001f);
+        zoomDistance = Mathf.Clamp(distance, zoomDistanceLimits.x, zoomDistanceLimits.y);
         targetZoomDistance = zoomDistance;
+
+        var direction = offset / distance;
+        yaw = targetYaw = Mathf.Atan2(direction.x, -direction.z) * Mathf.Rad2Deg;
+        pitch = targetPitch = Mathf.Asin(Mathf.Clamp(direction.y, -1f, 1f)) * Mathf.Rad2Deg;
+        pitch = targetPitch = Mathf.Clamp(pitch, pitchLimits.x, pitchLimits.y);
+        pitchVelocity = 0f;
+        yawVelocity = 0f;
     }
 
     public float GetPreviewZoomDistance()
@@ -112,18 +141,19 @@ public class PreviewInteractionController : MonoBehaviour
         targetZoomDistance = clamped;
         zoomVelocity = 0.0f;
 
-        var cam = ResolvePreviewCamera();
-        if (!interactionEnabled || cam == null || cam.orthographic)
-        {
-            return;
-        }
-
-        var local = cam.transform.localPosition;
-        local.z = -clamped;
-        cam.transform.localPosition = local;
+        // 相机位置在下一帧根据当前预览目标重新计算，避免写死相机的 local Z。
     }
 
-    private void HandleMouseRotate(Transform previewTransform)
+    public void FramePreview(Vector3 orbitTargetPosition, float distance)
+    {
+        var clamped = Mathf.Clamp(distance, zoomDistanceLimits.x, zoomDistanceLimits.y);
+        zoomDistance = clamped;
+        targetZoomDistance = clamped;
+        zoomVelocity = 0.0f;
+        ApplyCameraOrbit(orbitTargetPosition);
+    }
+
+    private void HandleMouseRotate(Vector3 orbitTargetPosition)
     {
         if (!Application.isPlaying)
         {
@@ -158,11 +188,8 @@ public class PreviewInteractionController : MonoBehaviour
             targetPitch = Mathf.Clamp(targetPitch, pitchLimits.x, pitchLimits.y);
         }
 
-        previewTransform.rotation = applyTransformRotation
-            ? Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.AngleAxis(pitch, Vector3.right)
-            : Quaternion.identity;
-
         HandleScrollZoom();
+        ApplyCameraOrbit(orbitTargetPosition);
     }
 
     private void HandleScrollZoom()
@@ -185,9 +212,28 @@ public class PreviewInteractionController : MonoBehaviour
         }
 
         zoomDistance = Mathf.SmoothDamp(zoomDistance, targetZoomDistance, ref zoomVelocity, 0.08f);
-        var local = cam.transform.localPosition;
-        local.z = -zoomDistance;
-        cam.transform.localPosition = local;
+        // 位置由 ApplyCameraOrbit 统一写入，滚轮只改变轨道半径。
+    }
+
+    private void ApplyCameraOrbit(Vector3 orbitTargetPosition)
+    {
+        var cam = ResolvePreviewCamera();
+        if (cam == null || cam.orthographic)
+        {
+            return;
+        }
+
+        var distance = Mathf.Clamp(zoomDistance, zoomDistanceLimits.x, zoomDistanceLimits.y);
+        // 交互角度沿用旧的物体旋转语义；相机绕目标旋转时需要取逆变换。
+        var orbitRotation = Quaternion.AngleAxis(-yaw, Vector3.up) * Quaternion.AngleAxis(-pitch, Vector3.right);
+        var target = orbitTargetPosition;
+        cam.transform.position = target + orbitRotation * new Vector3(0f, 0f, -distance);
+
+        var direction = target - cam.transform.position;
+        if (direction.sqrMagnitude > 0.000001f)
+        {
+            cam.transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+        }
     }
 
     private Camera ResolvePreviewCamera()
