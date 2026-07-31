@@ -18,9 +18,9 @@ public static class VolumePreviewSceneTools
     private const string CalibrationChartTexturePath = "Assets/unity-graphics-lab/Shared/Textures/T_LookDevColorChart.png";
     private const string CalibrationChartMaterialPath = "Assets/unity-graphics-lab/Shared/Materials/M_LookDevColorChart.mat";
     private const string LookDevScenePath = "Assets/unity-graphics-lab/Shared/Scenes/LookDev.unity";
-    private const string CrystalScenePath = "Assets/unity-graphics-lab/Crystal/Scenes/Graphics-Crystal-Example.unity";
-    private const string JadeScenePath = "Assets/unity-graphics-lab/JadeVolume/Scenes/Graphics-JadeVolume-Example.unity";
-    private const string WaterScenePath = "Assets/unity-graphics-lab/Water/Scenes/Graphics-Water-Example.unity";
+    private const string CrystalScenePath = "Assets/unity-graphics-lab/Effects/Crystal/Scenes/Graphics-Crystal-Example.unity";
+    private const string JadeScenePath = "Assets/unity-graphics-lab/Effects/JadeVolume/Scenes/Graphics-JadeVolume-Example.unity";
+    private const string WaterScenePath = "Assets/unity-graphics-lab/Effects/Water/Scenes/Graphics-Water-Example.unity";
 
     private static readonly Dictionary<string, string> ProfileByScene = new Dictionary<string, string>
     {

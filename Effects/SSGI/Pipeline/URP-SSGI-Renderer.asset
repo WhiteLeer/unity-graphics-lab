@@ -41,25 +41,6 @@ MonoBehaviour:
     debugStep4: 16
     renderPassEvent: 450
     ssprCompute: {fileID: 7200000, guid: 7984928e0d78c954982a69518fd7770e, type: 3}
---- !u!114 &-3058767288371390565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9de8a26bf81f4afc8e281f39ac36a5f0, type: 3}
-  m_Name: VolumeThicknessRendererFeature
-  m_EditorClassIdentifier: 
-  m_Active: 1
-  settings:
-    resolutionScale: 1
-    layerMask:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    renderPassEvent: 250
 --- !u!114 &-2195921265812155756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117,19 +98,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de640fe3d0db1804a85f9fc8f5cadab6, type: 3}
-  m_Name: URP-Base-Renderer
+  m_Name: URP-SSGI-Renderer
   m_EditorClassIdentifier: 
   debugShaders:
-    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7, type: 3}
-    hdrDebugViewPS: {fileID: 4800000, guid: 573620ae32aec764abd4d728906d2587, type: 3}
+    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7,
+      type: 3}
   m_RendererFeatures:
   - {fileID: 725786909957352387}
   - {fileID: -5406778040509818211}
   - {fileID: 8746653824339448573}
   - {fileID: 8648331432059004177}
   - {fileID: 7425471548419983411}
-  - {fileID: -3058767288371390565}
-  m_RendererFeatureMap: bd9152cc1dcb0772c3eba2665983120a9d9a07bc0444f7b4fd9210bd4f5b6279027456df5e485899b2e4f19aead21bf711e5b8db9d0b057833c8570d08930c673870aabf20ecbf169bd709765b138dd5
+  m_RendererFeatureMap: bd9152cc1dcb0772c3eba2665983120a9d9a07bc0444f7b4fd9210bd4f5b6279027456df5e485899b2e4f19aead21bf711e5b8db9d0b057833c8570d08930c673870aabf20ecbf16
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -140,18 +120,15 @@ MonoBehaviour:
     samplingPS: {fileID: 4800000, guid: 04c410c9937594faa893a11dceb85f7e, type: 3}
     stencilDeferredPS: {fileID: 4800000, guid: e9155b26e1bc55942a41e518703fe304, type: 3}
     fallbackErrorPS: {fileID: 4800000, guid: e6e9a19c3678ded42a3bc431ebef7dbd, type: 3}
-    fallbackLoadingPS: {fileID: 4800000, guid: 7f888aff2ac86494babad1c2c5daeee2, type: 3}
     materialErrorPS: {fileID: 4800000, guid: 5fd9a8feb75a4b5894c241777f519d4e, type: 3}
     coreBlitPS: {fileID: 4800000, guid: 93446b5c5339d4f00b85c159e1159b7c, type: 3}
-    coreBlitColorAndDepthPS: {fileID: 4800000, guid: d104b2fc1ca6445babb8e90b0758136b, type: 3}
-    blitHDROverlay: {fileID: 4800000, guid: a89bee29cffa951418fc1e2da94d1959, type: 3}
-    cameraMotionVector: {fileID: 4800000, guid: c56b7e0d4c7cb484e959caeeedae9bbf, type: 3}
-    objectMotionVector: {fileID: 4800000, guid: 7b3ede40266cd49a395def176e1bc486, type: 3}
-    dataDrivenLensFlare: {fileID: 4800000, guid: 6cda457ac28612740adb23da5d39ea92, type: 3}
-    terrainDetailLitPS: {fileID: 4800000, guid: f6783ab646d374f94b199774402a5144, type: 3}
-    terrainDetailGrassPS: {fileID: 4800000, guid: e507fdfead5ca47e8b9a768b51c291a1, type: 3}
-    terrainDetailGrassBillboardPS: {fileID: 4800000, guid: 29868e73b638e48ca99a19ea58c48d90, type: 3}
-  m_AssetVersion: 2
+    coreBlitColorAndDepthPS: {fileID: 4800000, guid: d104b2fc1ca6445babb8e90b0758136b,
+      type: 3}
+    cameraMotionVector: {fileID: 4800000, guid: c56b7e0d4c7cb484e959caeeedae9bbf,
+      type: 3}
+    objectMotionVector: {fileID: 4800000, guid: 7b3ede40266cd49a395def176e1bc486,
+      type: 3}
+  m_AssetVersion: 1
   m_OpaqueLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -168,8 +145,9 @@ MonoBehaviour:
   m_ShadowTransparentReceive: 1
   m_RenderingMode: 0
   m_DepthPrimingMode: 1
-  m_CopyDepthMode: 0
   m_AccurateGbufferNormals: 0
+  m_ClusteredRendering: 0
+  m_TileSize: 32
   m_IntermediateTextureMode: 0
 --- !u!114 &725786909957352387
 MonoBehaviour:
@@ -230,7 +208,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02774fd17de213d4a8c7dd0a187e9007, type: 3}
   m_Name: SSGIRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
     intensity: 0.56
     rayLength: 5.1
@@ -267,21 +245,15 @@ MonoBehaviour:
   m_Active: 0
   settings:
     intensity: 1.9
-    maxDistance: 12
-    step: 0.012
+    maxSteps: 128
+    stride: 0.012
     thickness: 0.04
-    receiverNormalThreshold: 0.9
-    enableReceiverFilter: 1
-    receiverNormalFade: 0.12
+    maxDistance: 12
     rayStartBias: 0.03
-    reflectionBlend: 1
-    receiverRoughnessMap: {fileID: 0}
-    receiverRoughnessTiling: {x: 0.25, y: 0.25}
-    receiverRoughnessOffset: {x: 0, y: 0}
-    receiverRoughnessStrength: 1
-    receiverMaxBlurPixels: 24
-    fallbackIntensity: 0.35
-    fallbackRoughness: 0.08
+    fresnelPower: 1.2
+    fadeStart: 0
+    fadeEnd: 0.12
+    hitSoftness: 0.232
     enableDebugVisualization: 0
     debugStep1: 16
     debugStep2: 10
