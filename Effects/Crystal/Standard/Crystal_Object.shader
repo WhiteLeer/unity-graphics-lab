@@ -9,6 +9,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
 
         _RefractionIndex("折射率", Range(1.01, 2.0)) = 1.2
         _Dispersion("色散", Range(0.0, 0.08)) = 0.012
+        _Metallic("金属度", Range(0.0, 1.0)) = 0.0
         _Roughness("表面粗糙度", Range(0.0, 1.0)) = 0.04
         _ThicknessScale("厚度倍率", Range(0.1, 3.0)) = 1.0
         _AbsorptionStrength("吸收强度", Range(0.0, 4.0)) = 0.22
@@ -116,6 +117,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float4 _InteriorTint;
                 float _RefractionIndex;
                 float _Dispersion;
+                float _Metallic;
                 float _Roughness;
                 float _ThicknessScale;
                 float _AbsorptionStrength;
@@ -395,6 +397,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float3 sceneTransmission = float3(sceneR.r, sceneG.g, sceneB.b);
 
                 float3 environmentG = GlossyEnvironmentReflection(refractedG, input.positionWS, _Roughness, 1.0);
+                environmentG *= lerp(1.0, 0.25, saturate(_Roughness));
                 float3 environmentTransmission = environmentG;
                 float sceneSampleValid = step(
                     1e-5,
@@ -426,15 +429,19 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 transmission *= transmittance;
 
                 float f0Base = (ior - 1.0) / (ior + 1.0);
-                float f0 = f0Base * f0Base;
+                float dielectricF0Value = f0Base * f0Base;
+                float3 dielectricF0 = float3(dielectricF0Value, dielectricF0Value, dielectricF0Value);
+                float3 metallicF0 = saturate(_BaseColor.rgb);
+                float3 f0 = lerp(dielectricF0, metallicF0, saturate(_Metallic));
                 float ndv = saturate(dot(normalWS, viewDirWS));
-                float surfaceFresnel = f0 + (1.0 - f0) * pow(1.0 - ndv, 5.0);
+                float3 surfaceFresnel = f0 + (1.0 - f0) * pow(1.0 - ndv, 5.0);
                 float3 reflectionDirection = reflect(incidentWS, normalWS);
                 float3 reflection = GlossyEnvironmentReflection(
                     reflectionDirection,
                     input.positionWS,
                     _Roughness,
                     1.0);
+                reflection *= lerp(1.0, 0.25, saturate(_Roughness));
 
                 float objectScale = ObjectMinimumScale();
                 float rayOffset = max(objectScale * 0.001, thickness.opticalThickness * 0.001);
@@ -492,6 +499,7 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                     float referenceSpecular = max(
                         1.0 - length(cross(currentDirectionWS, facetNormalWS * referenceLight)),
                         0.0) * _FacetSpecularStrength;
+                    referenceSpecular *= lerp(1.0, 0.25, saturate(_Roughness));
                     float3 axisTint = lerp(_InteriorTint.rgb, _EdgeTint.rgb, facetAxisWeights);
                     float3 facetColor = referenceColor * diffuseReference +
                                         edgeReference +
@@ -541,8 +549,14 @@ Shader "SurfaceLab/Crystal/VolumeObject"
                 float3 referenceCrystal = lerp(referenceFinal, facetAverage, facetBlend);
 
                 float3 edgeColor = _EdgeTint.rgb * pow(1.0 - ndv, 3.0);
-                float reflectionWeight = surfaceFresnel * _ReflectionStrength;
-                float3 color = lerp(referenceCrystal, transmission, _SceneTransmissionBlend) *
+                float reflectionControl = lerp(
+                    saturate(_ReflectionStrength),
+                    1.0,
+                    saturate(_Metallic));
+                float3 reflectionWeight = surfaceFresnel * reflectionControl;
+                float transmissionBlend = saturate(
+                    _SceneTransmissionBlend * (1.0 - saturate(_Metallic)));
+                float3 color = lerp(referenceCrystal, transmission, transmissionBlend) *
                                (1.0 - reflectionWeight) +
                                reflection * reflectionWeight +
                                edgeColor;

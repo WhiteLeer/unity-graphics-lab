@@ -42,10 +42,11 @@ Material:
     - _InternalBounceCount: 2
     - _InternalTraceSteps: 8
     - _LatticeIterations: 9
-    - _ReflectionStrength: 0
+    - _Metallic: 0
+    - _ReflectionStrength: 0.35
     - _RefractionIndex: 2
     - _RefractionStrength: 2
-    - _Roughness: 1
+    - _Roughness: 0.04
     - _SceneTransmissionBlend: 0.22
     - _ThicknessScale: 3
     m_Colors:
