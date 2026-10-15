@@ -52,6 +52,6 @@
 
 ## 重建
 
-首次初始化或需要恢复默认布局时，打开 `Tools/LookDev 对照/重建标准场景`。该操作只重建当前六类标准场景和共享 Prefab，会覆盖这些默认资产的手动修改。
+首次初始化或需要恢复默认布局时，打开 `Tools/LookDev 重建标准场景`。该操作只重建当前六类标准场景和共享 Prefab，会覆盖这些默认资产的手动修改。
 
 效果实现仍保留在各自的 `Effects/` 目录中；旧的 Preview、Carrier、VolumePreview、独立示例场景和 Capture Profile 截图流程已移除。

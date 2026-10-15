@@ -44,7 +44,7 @@ namespace UnityGraphicsLab.LookDev.Editor
         private static Font labelFont;
         private static int labelIndex;
 
-        [MenuItem("Tools/LookDev 对照/重建标准场景")]
+        [MenuItem("Tools/LookDev 重建标准场景")]
         public static void RebuildStandardScenes()
         {
             EnsureFolders();

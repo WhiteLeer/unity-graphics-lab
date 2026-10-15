@@ -22,6 +22,7 @@ namespace UnityGraphicsLab.LookDev.Editor
             public string Description;
             public ParameterMode ParameterMode;
             public string[] TargetNames;
+            public string[] DefaultMaterialPaths;
         }
 
         private sealed class SwapRecord
@@ -39,7 +40,14 @@ namespace UnityGraphicsLab.LookDev.Editor
                 SceneName = "LookDev-ChartTest",
                 Description = "将测试材质应用到默认球、灰球、镜面球和粗糙球；后三者分别写入金属度/粗糙度。颜色卡保持不变。",
                 ParameterMode = ParameterMode.Chart,
-                TargetNames = new[] { "REF_TEST", "REF_Gray", "REF_Mirror", "REF_Rough" }
+                TargetNames = new[] { "REF_TEST", "REF_Gray", "REF_Mirror", "REF_Rough" },
+                DefaultMaterialPaths = new[]
+                {
+                    "Assets/unity-graphics-lab/LookDev/Calibration/Materials/LookDev_CalibrationDefault.mat",
+                    "Assets/unity-graphics-lab/LookDev/Calibration/Materials/LookDev_CalibrationGray.mat",
+                    "Assets/unity-graphics-lab/LookDev/Calibration/Materials/LookDev_CalibrationMirror.mat",
+                    "Assets/unity-graphics-lab/LookDev/Calibration/Materials/LookDev_CalibrationRough.mat"
+                }
             },
             new SceneContract
             {
@@ -321,18 +329,48 @@ namespace UnityGraphicsLab.LookDev.Editor
 
         private void RestoreCurrentSceneInternal(bool showStatus)
         {
-            var scenePath = SceneManager.GetActiveScene().path;
-            var keys = new List<string>(ActiveSwaps.Keys);
+            var activeScene = SceneManager.GetActiveScene();
+            var scenePath = activeScene.path;
+            var contract = FindContract(activeScene.name);
+            var restoredRenderers = new HashSet<Renderer>();
             var restored = 0;
+
+            if (contract != null)
+            {
+                foreach (var target in ResolveTargets(contract))
+                {
+                    var defaultMaterial = LoadDefaultMaterial(contract, target.gameObject.name);
+                    if (defaultMaterial == null)
+                    {
+                        var sourceRenderer = PrefabUtility.GetCorrespondingObjectFromSource<Renderer>(target);
+                        if (sourceRenderer != null)
+                            defaultMaterial = sourceRenderer.sharedMaterial;
+                    }
+
+                    if (defaultMaterial == null) continue;
+
+                    Undo.RecordObject(target, "Restore LookDev default materials");
+                    var materials = target.sharedMaterials;
+                    if (materials.Length == 0) materials = new[] { defaultMaterial };
+                    for (var index = 0; index < materials.Length; index++)
+                        materials[index] = defaultMaterial;
+                    target.sharedMaterials = materials;
+                    restoredRenderers.Add(target);
+                    restored++;
+                }
+            }
+
+            var keys = new List<string>(ActiveSwaps.Keys);
             foreach (var key in keys)
             {
                 if (!key.StartsWith(scenePath + "|")) continue;
 
                 var record = ActiveSwaps[key];
-                if (record.Renderer != null)
+                if (record.Renderer != null && !restoredRenderers.Contains(record.Renderer))
                 {
                     Undo.RecordObject(record.Renderer, "Restore LookDev default materials");
                     record.Renderer.sharedMaterials = (Material[])record.OriginalMaterials.Clone();
+                    restoredRenderers.Add(record.Renderer);
                     restored++;
                 }
 
@@ -344,9 +382,36 @@ namespace UnityGraphicsLab.LookDev.Editor
                 ActiveSwaps.Remove(key);
             }
 
-            if (restored > 0) EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+            if (restored > 0) EditorSceneManager.MarkSceneDirty(activeScene);
             if (showStatus)
-                SetStatus(restored == 0 ? "当前场景没有需要恢复的替换。" : "已恢复默认材质。", MessageType.Info);
+                SetStatus(restored == 0 ? "当前场景没有找到可恢复的默认材质。" : "已强制恢复当前场景默认材质。", MessageType.Info);
+        }
+
+        private static Material LoadDefaultMaterial(SceneContract contract, string targetName)
+        {
+            var path = GetDefaultMaterialPath(contract, targetName);
+            return string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<Material>(path);
+        }
+
+        private static string GetDefaultMaterialPath(SceneContract contract, string targetName)
+        {
+            if (contract.DefaultMaterialPaths != null)
+            {
+                for (var index = 0; index < contract.TargetNames.Length; index++)
+                {
+                    if (contract.TargetNames[index] == targetName && index < contract.DefaultMaterialPaths.Length)
+                        return contract.DefaultMaterialPaths[index];
+                }
+            }
+
+            if (contract.ParameterMode == ParameterMode.MetallicRoughnessGrid &&
+                targetName.StartsWith("TGT_M") && targetName.Contains("_R"))
+            {
+                return "Assets/unity-graphics-lab/LookDev/Calibration/Materials/Grid_Metallic_" +
+                       GetGridRow(targetName) + "_Roughness_" + GetGridColumn(targetName) + ".mat";
+            }
+
+            return null;
         }
 
         private List<Renderer> ResolveTargets(SceneContract contract)
